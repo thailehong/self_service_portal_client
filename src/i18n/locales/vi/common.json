@@ -1,0 +1,375 @@
+{
+  "common": {
+    "appName": "Cổng thông tin nhân viên",
+    "search": "Tìm kiếm",
+    "comingSoon": "Sắp ra mắt",
+    "notAvailable": "Chưa có dữ liệu",
+    "employeeId": "Mã nhân viên",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "firstName": "Tên",
+    "lastName": "Họ",
+    "email": "Email",
+    "department": "Phòng ban",
+    "status": "Trạng thái",
+    "actions": "Thao tác",
+    "optional": "Tùy chọn",
+    "startDate": "Ngày bắt đầu dự kiến"
+  },
+  "actions": {
+    "signIn": "Đăng nhập",
+    "signOut": "Đăng xuất",
+    "register": "Đăng ký",
+    "goHome": "Về trang chủ",
+    "goDashboard": "Mở bảng điều khiển",
+    "retry": "Thử lại",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "save": "Lưu thay đổi",
+    "apply": "Áp dụng",
+    "browse": "Chọn tệp",
+    "upload": "Tải tệp lên",
+    "remove": "Xóa",
+    "clear": "Xóa hết",
+    "viewAll": "Xem tất cả",
+    "learnMore": "Tìm hiểu thêm"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "dashboard": "Bảng điều khiển",
+    "hr_admin": "HR & Admin",
+    "help": "Trung tâm trợ giúp"
+  },
+  "settings": {
+    "title": "Tùy chọn",
+    "appearance": "Giao diện",
+    "themeMode": "Chế độ màu",
+    "light": "Sáng",
+    "dark": "Tối",
+    "primaryColor": "Màu chủ đạo",
+    "language": "Ngôn ngữ",
+    "sidebar": "Thanh bên",
+    "sidebarDescription": "Quản lý cá nhân hóa, ngôn ngữ và tùy chọn hiển thị tại một nơi.",
+    "appearanceDescription": "Chuyển đổi giữa giao diện sáng và tối cho không gian làm việc.",
+    "primaryColorDescription": "Chọn màu nhấn được dùng cho nút, điểm nhấn và liên kết.",
+    "languageDescription": "Chọn ngôn ngữ giao diện cho toàn bộ ứng dụng."
+  },
+  "languages": {
+    "en": "Tiếng Anh",
+    "vi": "Tiếng Việt"
+  },
+  "states": {
+    "loading": "Đang tải",
+    "restoringSession": "Đang khôi phục phiên làm việc an toàn...",
+    "emptyTitle": "Chưa có nội dung",
+    "emptyDescription": "Khi có dữ liệu, nội dung sẽ xuất hiện tại đây.",
+    "notFoundTitle": "Không tìm thấy trang",
+    "notFoundDescription": "Trang bạn yêu cầu không tồn tại hoặc đã bị di chuyển.",
+    "unauthorizedTitle": "Không có quyền truy cập",
+    "unauthorizedDescription": "Tài khoản của bạn không có quyền vào khu vực này.",
+    "tableEmptyTitle": "Không có bản ghi phù hợp",
+    "tableEmptyDescription": "Hãy thử từ khóa khác hoặc điều chỉnh bộ lọc."
+  },
+  "auth": {
+    "tagline": "Truy cập nội bộ với trải nghiệm cấp doanh nghiệp",
+    "loginTitle": "Chào mừng quay lại",
+    "loginHeading": "Truy cập cổng thông tin nhân viên với bảo mật cấp doanh nghiệp.",
+    "loginDescription": "Xác thực bằng tài khoản Active Directory hoặc tài khoản cục bộ đã đăng ký. Phiên làm việc được khôi phục an toàn bằng refresh token xoay vòng.",
+    "registerTitle": "Tạo quyền truy cập cổng thông tin",
+    "registerHeading": "Đăng ký tài khoản cục bộ bằng thông tin nhân viên của bạn.",
+    "registerDescription": "Chỉ nhân viên không có tài khoản Active Directory mới có thể tạo đăng nhập cục bộ. Mật khẩu được băm ở backend và không bao giờ lưu ở dạng thô.",
+    "brandTitle": "Không gian làm việc cổng nhân viên",
+    "brandDescription": "Cổng nội bộ thống nhất cho truy cập, vận hành và năng suất nhân viên.",
+    "brandBullets": [
+      "Access token ngắn hạn và refresh token HttpOnly",
+      "Bảo vệ tuyến đường hiện đại và khôi phục phiên mượt mà",
+      "Hệ thống thiết kế dùng chung để bảo trì"
+    ],
+    "loginMode": "Chế độ đăng nhập",
+    "loginModeAd": "Đăng nhập Active Directory",
+    "loginModeLocal": "Đăng nhập cổng cục bộ",
+    "noAccount": "Không có tài khoản AD?",
+    "alreadyRegistered": "Đã đăng ký?",
+    "registerCta": "Đăng ký bằng mã nhân viên",
+    "signInCta": "Đi đến đăng nhập",
+    "helperPassword": "Sử dụng ít nhất 8 ký tự.",
+    "helperPasswordValid": "Độ dài mật khẩu hợp lệ.",
+    "validationRequired": "Vui lòng nhập đầy đủ các trường bắt buộc.",
+    "validationPasswordLength": "Mật khẩu phải có ít nhất 8 ký tự.",
+    "validationPasswordMismatch": "Mật khẩu và xác nhận mật khẩu phải khớp nhau.",
+    "submittingLogin": "Đang đăng nhập...",
+    "submittingRegister": "Đang tạo tài khoản...",
+    "formSections": {
+      "identity": "Thông tin định danh",
+      "credentials": "Thông tin đăng nhập"
+    }
+  },
+  "home": {
+    "eyebrow": "Truy cập nhân viên cấp doanh nghiệp",
+    "headline": "Cổng nội bộ hiện đại cho truy cập an toàn và theo dõi vận hành.",
+    "description": "Frontend hiện hoạt động như một ứng dụng nội bộ có thể triển khai với hệ thống giao diện bền vững, đa ngôn ngữ, thành phần tái sử dụng và dashboard mở rộng tốt.",
+    "primaryCta": "Vào không gian làm việc",
+    "secondaryCta": "Đăng ký tài khoản",
+    "cards": [
+      {
+        "title": "Trải nghiệm doanh nghiệp",
+        "description": "Khung ứng dụng thực tế với điều hướng có cấu trúc, mẫu dùng chung và trạng thái giao diện hoàn chỉnh."
+      },
+      {
+        "title": "Hỗ trợ đa ngôn ngữ",
+        "description": "Tiếng Anh và tiếng Việt đã sẵn sàng, dễ mở rộng thêm ngôn ngữ mới."
+      },
+      {
+        "title": "Cá nhân hóa giao diện",
+        "description": "Chế độ sáng tối và màu chủ đạo được lưu lại giữa các phiên làm việc."
+      }
+    ],
+    "stats": [
+      {
+        "label": "Tuyến đường được bảo vệ",
+        "value": "100%"
+      },
+      {
+        "label": "Khối giao diện tái sử dụng",
+        "value": "20+"
+      },
+      {
+        "label": "Ngôn ngữ hỗ trợ",
+        "value": "2"
+      }
+    ]
+  },
+  "dashboard": {
+    "title": "Không gian vận hành",
+    "subtitle": "Theo dõi truy cập nhân viên, hoạt động quy trình và xử lý tệp an toàn trong một dashboard thống nhất.",
+    "breadcrumbs": {
+      "root": "Không gian làm việc",
+      "current": "Bảng điều khiển"
+    },
+    "welcome": "Chào mừng quay lại, {{name}}",
+    "overview": "Tổng quan truy cập an toàn",
+    "quickActions": "Thao tác nhanh",
+    "recentActivity": "Hoạt động gần đây",
+    "recentFiles": "Tệp gần đây",
+    "dropzoneTitle": "Thả tệp để tải lên an toàn",
+    "dropzoneDescription": "Kéo thả tệp hoặc chọn để thêm tài liệu vào luồng xử lý nội bộ.",
+    "activityFeedSubtitle": "Những cập nhật vận hành mới nhất trong không gian làm việc.",
+    "tableTitle": "Tổng quan vận hành nhóm",
+    "tableSubtitle": "Xem trước trạng thái nhiệm vụ và tuân thủ bằng bảng dữ liệu dùng chung.",
+    "insightsTitle": "Chỉ số vận hành",
+    "insightsSubtitle": "Biểu đồ giả lập có thể được thay bằng dữ liệu thật mà không cần đổi cấu trúc layout.",
+    "tabs": {
+      "performance": "Hiệu suất",
+      "security": "Bảo mật"
+    },
+    "metrics": {
+      "employees": {
+        "title": "Nhân viên đủ điều kiện",
+        "trend": "+8% quý này"
+      },
+      "users": {
+        "title": "Người dùng hoạt động",
+        "trend": "Ổn định tuần này"
+      },
+      "sessions": {
+        "title": "Phiên hoạt động",
+        "trend": "Đang xoay vòng an toàn"
+      },
+      "files": {
+        "title": "Tệp đã xử lý",
+        "trend": "24 giờ gần nhất"
+      }
+    },
+    "quickActionItems": [
+      {
+        "title": "Kiểm tra nhật ký truy cập",
+        "description": "Xem sự kiện xác thực và bất thường mới nhất."
+      },
+      {
+        "title": "Phê duyệt onboarding",
+        "description": "Xác nhận các hồ sơ nhân viên đang chờ kích hoạt."
+      },
+      {
+        "title": "Xuất báo cáo",
+        "description": "Chuẩn bị bản tóm tắt vận hành mới nhất cho lãnh đạo."
+      }
+    ],
+    "activityItems": [
+      {
+        "title": "Đăng ký mới đã được phê duyệt",
+        "description": "Nhân viên EMP1004 đã hoàn tất onboarding.",
+        "time": "10 phút trước",
+        "status": "Thành công"
+      },
+      {
+        "title": "Refresh token đã xoay vòng",
+        "description": "Phiên làm việc được cập nhật trong quá trình khôi phục dashboard.",
+        "time": "22 phút trước",
+        "status": "Thông tin"
+      },
+      {
+        "title": "Còn thiếu xác nhận chính sách",
+        "description": "Ba nhân viên vẫn chưa xem chính sách mới.",
+        "time": "1 giờ trước",
+        "status": "Cảnh báo"
+      }
+    ],
+    "filesItems": [
+      {
+        "name": "Quarterly_Access_Audit.pdf",
+        "meta": "PDF • 1.2 MB"
+      },
+      {
+        "name": "Onboarding_Checklist.xlsx",
+        "meta": "Bảng tính • 420 KB"
+      },
+      {
+        "name": "Security_Playbook_v3.docx",
+        "meta": "Tài liệu • 980 KB"
+      }
+    ],
+    "chartLabels": [
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "CN"
+    ],
+    "performanceLabel": "Thông lượng xác thực",
+    "securityLabel": "Mức sẵn sàng bảo mật",
+    "table": {
+      "searchPlaceholder": "Tìm nhân viên, phòng ban hoặc trạng thái"
+    },
+    "confirmTitle": "Xác nhận thao tác nhanh",
+    "confirmDescription": "Thao tác này hiện là placeholder ở frontend. Hãy giữ mẫu tương tác này cho luồng xử lý thực tế sau này.",
+    "performanceDescription": "Khối lượng xác thực trong tuần trên toàn không gian làm việc.",
+    "securityDescription": "Góc nhìn tổng hợp về chính sách, token và mức độ bảo vệ route.",
+    "previewAction": "Xuất bản xem trước",
+    "filesAction": "Hàng đợi tải lên",
+    "securityStatus": "Đang bảo vệ",
+    "performanceStatus": "Ổn định",
+    "tableColumns": {
+      "owner": "Phụ trách",
+      "task": "Nhiệm vụ",
+      "department": "Phòng ban",
+      "status": "Trạng thái",
+      "dueDate": "Hạn xử lý",
+      "actions": "Thao tác"
+    },
+    "quickActionConfirm": "Tiếp tục",
+    "activityStatusSuccess": "Thành công",
+    "activityStatusInfo": "Thông tin",
+    "activityStatusWarning": "Cảnh báo",
+    "uploadSectionTitle": "Tiếp nhận an toàn",
+    "uploadSectionSubtitle": "Thu thập tệp nhạy cảm qua luồng kéo thả có kiểm soát.",
+    "recentFilesSubtitle": "Các tài liệu gần nhất mà nhóm đã xử lý.",
+    "quickActionsSubtitle": "Những thao tác thường được đội vận hành sử dụng.",
+    "sidebarCardTitle": "Trạng thái bảo mật",
+    "sidebarCardDescription": "Access token JWT, refresh token xoay vòng và route bảo vệ đang hoạt động.",
+    "sidebarChip": "Chuẩn doanh nghiệp"
+  },
+  "table": {
+    "searchPlaceholder": "Tìm bản ghi",
+    "rowsPerPage": "Số dòng mỗi trang",
+    "selected": "Đã chọn {{count}}",
+    "filterPlaceholder": "Lọc theo {{column}}",
+    "filters": "Bộ lọc cột",
+    "clearFilters": "Xóa bộ lọc",
+    "allOption": "Tất cả",
+    "columnOptionsDescription": "Sắp xếp, lọc cột này hoặc điều chỉnh các cột đang hiển thị trong bảng.",
+    "columnOptions": "Tùy chọn cột",
+    "manageColumns": "Quản lý cột",
+    "hideColumn": "Ẩn cột này",
+    "clearColumnFilter": "Xóa bộ lọc này",
+    "filterByColumn": "Lọc {{column}}",
+    "filterLabel": "Bộ lọc",
+    "sortLabel": "Sắp xếp",
+    "sortAscending": "Tăng dần",
+    "sortDescending": "Giảm dần"
+  },
+  "upload": {
+    "helper": "Định dạng chấp nhận: {{types}} • Tối đa {{size}} MB mỗi tệp",
+    "invalidType": "Loại tệp không được hỗ trợ: {{name}}",
+    "invalidSize": "Tệp vượt quá kích thước tối đa: {{name}}",
+    "empty": "Chưa có tệp nào được chọn",
+    "disabled": "Chức năng tải lên hiện không khả dụng"
+  },
+  "notifications": {
+    "themeUpdated": "Đã cập nhật giao diện.",
+    "languageUpdated": "Đã cập nhật ngôn ngữ.",
+    "logoutSuccess": "Bạn đã đăng xuất.",
+    "uploadReady": "Tệp đã sẵn sàng để tải lên.",
+    "uploadCleared": "Đã xóa tệp khỏi hàng đợi."
+  },
+  "pages": {
+    "notFoundAction": "Quay lại bảng điều khiển",
+    "unauthorizedAction": "Về trang chủ"
+  },
+  "topbar": {
+    "notificationsTitle": "Thông báo",
+    "notificationsSubtitle": "Các cập nhật gần đây từ không gian làm việc và hoạt động bảo mật.",
+    "openSettings": "Mở tùy chọn",
+    "notifications": [
+      {
+        "title": "Đã hoàn tất rà soát bảo mật",
+        "description": "Đợt kiểm tra truy cập gần nhất đã hoàn tất mà không có phát hiện nghiêm trọng.",
+        "time": "12 phút trước"
+      },
+      {
+        "title": "Đã kích hoạt tài khoản nhân viên mới",
+        "description": "Một tài khoản nhân viên vừa đăng ký đã sẵn sàng sử dụng cổng thông tin.",
+        "time": "46 phút trước"
+      },
+      {
+        "title": "Nhắc nhở chính sách",
+        "description": "Ba nhân viên vẫn chưa xác nhận chính sách truy cập mới.",
+        "time": "2 giờ trước"
+      }
+    ]
+  },
+  "navChildren": {
+    "uploadQueue": "Hàng đợi tải lên",
+    "recentLibrary": "Thư viện gần đây",
+    "accessAnalytics": "Phân tích truy cập",
+    "serviceRequests": "Yêu cầu dịch vụ",
+    "securityPosture": "Trạng thái bảo mật",
+    "helpCenter": "Trung tâm trợ giúp"
+  },
+  "sectionPage": {
+    "queueTitle": "Hàng đợi hiện tại",
+    "workflowSubtitle": "Sử dụng các bước này để xử lý {{section}} mượt mà và không bị đứt gãy bàn giao.",
+    "subtitle": "Quản lý {{section}} trong không gian {{parent}} với cùng khung ứng dụng doanh nghiệp và quy trình vận hành nhất quán.",
+    "queueSubtitle": "Khu vực này đã sẵn sàng nhận dữ liệu backend thật khi luồng tương ứng được kết nối API.",
+    "emptyDescription": "Các bản ghi mới cho không gian {{parent}} sẽ xuất hiện tại đây sau khi phần này được kết nối.",
+    "emptyAction": "Làm mới khu vực",
+    "infoBanner": "{{section}} hiện đang dùng dữ liệu mẫu ở frontend và khung giao diện cho quy trình trực tiếp.",
+    "badge": "Không gian {{parent}}",
+    "emptyTitle": "Không có bản ghi nào đang chờ trong {{section}}",
+    "workflowItems": [
+      {
+        "description": "Xác nhận mức ưu tiên, người phụ trách và yêu cầu chính sách cho {{section}} trước khi xử lý.",
+        "title": "Rà soát công việc mới"
+      },
+      {
+        "description": "Gán người sở hữu rõ ràng và giữ các bước tiếp theo hiển thị trong toàn bộ không gian {{parent}}.",
+        "title": "Chốt trách nhiệm"
+      },
+      {
+        "description": "Ghi lại kết quả và trạng thái bàn giao để nhóm tiếp theo có thể tiếp tục mà không bị chậm.",
+        "title": "Khép kín quy trình"
+      }
+    ],
+    "metrics": {
+      "ownersTitle": "Người phụ trách",
+      "slaTrend": "Mốc thời gian mục tiêu hiện tại cho {{section}}",
+      "slaTitle": "Khung thời gian xử lý",
+      "backlogTrend": "Các mục hiện đang chờ xử lý trong {{section}}",
+      "backlogTitle": "Mục đang mở",
+      "ownersTrend": "Mức độ bao phủ trong quy trình {{parent}}"
+    },
+    "workflowTitle": "Hướng dẫn quy trình"
+  }
+}

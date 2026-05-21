@@ -1,0 +1,371 @@
+{
+    "common":  {
+                   "appName":  "Employee Portal",
+                   "search":  "Search",
+                   "comingSoon":  "Coming soon",
+                   "notAvailable":  "Not available",
+                   "employeeId":  "Employee ID",
+                   "username":  "Username",
+                   "password":  "Password",
+                   "confirmPassword":  "Confirm password",
+                   "firstName":  "First name",
+                   "lastName":  "Last name",
+                   "email":  "Email",
+                   "department":  "Department",
+                   "status":  "Status",
+                   "actions":  "Actions",
+                   "optional":  "Optional",
+                   "startDate":  "Preferred start date"
+               },
+    "actions":  {
+                    "signIn":  "Sign in",
+                    "signOut":  "Logout",
+                    "register":  "Register",
+                    "goHome":  "Back to home",
+                    "goDashboard":  "Open dashboard",
+                    "retry":  "Retry",
+                    "cancel":  "Cancel",
+                    "confirm":  "Confirm",
+                    "save":  "Save changes",
+                    "apply":  "Apply",
+                    "browse":  "Browse files",
+                    "upload":  "Upload files",
+                    "remove":  "Remove",
+                    "clear":  "Clear",
+                    "viewAll":  "View all",
+                    "learnMore":  "Learn more"
+                },
+    "nav":  {
+                "home":  "Home",
+                "dashboard":  "Dashboard",
+                "hr_admin":  "HR & Admin",
+                "help":  "Help center"
+            },
+    "settings":  {
+                     "title":  "Preferences",
+                     "appearance":  "Appearance",
+                     "themeMode":  "Theme mode",
+                     "light":  "Light",
+                     "dark":  "Dark",
+                     "primaryColor":  "Primary color",
+                     "language":  "Language",
+                     "sidebar":  "Sidebar",
+                     "sidebarDescription":  "Control personalization, language, and visual preferences from one place.",
+                     "appearanceDescription":  "Switch between light and dark visual modes for the workspace.",
+                     "primaryColorDescription":  "Choose the accent color used across buttons, highlights, and links.",
+                     "languageDescription":  "Select the interface language used throughout the application."
+                 },
+    "languages":  {
+                      "en":  "English",
+                      "vi":  "Vietnamese"
+                  },
+    "states":  {
+                   "loading":  "Loading",
+                   "restoringSession":  "Restoring secure session...",
+                   "emptyTitle":  "Nothing to show yet",
+                   "emptyDescription":  "Once data is available, it will appear here.",
+                   "notFoundTitle":  "Page not found",
+                   "notFoundDescription":  "The page you requested does not exist or is no longer available.",
+                   "unauthorizedTitle":  "Unauthorized",
+                   "unauthorizedDescription":  "Your account does not have permission to access this area.",
+                   "tableEmptyTitle":  "No matching records",
+                   "tableEmptyDescription":  "Try a different keyword or adjust the filters."
+               },
+    "auth":  {
+                 "tagline":  "Internal access, enterprise grade experience",
+                 "loginTitle":  "Welcome back",
+                 "loginHeading":  "Access the employee portal with enterprise-grade security.",
+                 "loginDescription":  "Authenticate with your Active Directory account or a registered local portal account. Sessions are restored securely with rotating refresh tokens.",
+                 "registerTitle":  "Create portal access",
+                 "registerHeading":  "Register a local account with your employee identity.",
+                 "registerDescription":  "Only employees without an Active Directory account can create a local portal login. Your password is hashed on the backend and never stored in plain text.",
+                 "brandTitle":  "Employee Portal Workspace",
+                 "brandDescription":  "A unified internal portal for access, operations, and employee productivity.",
+                 "brandBullets":  [
+                                      "Short-lived access tokens and HttpOnly refresh cookies",
+                                      "Modern route protection and session recovery UX",
+                                      "Shared design system built for maintainability"
+                                  ],
+                 "loginMode":  "Login mode",
+                 "loginModeAd":  "Active Directory login",
+                 "loginModeLocal":  "Local portal login",
+                 "noAccount":  "No AD account?",
+                 "alreadyRegistered":  "Already registered?",
+                 "registerCta":  "Register using Employee ID",
+                 "signInCta":  "Go to sign in",
+                 "helperPassword":  "Use at least 8 characters.",
+                 "helperPasswordValid":  "Password length looks good.",
+                 "validationRequired":  "Please complete all required fields.",
+                 "validationPasswordLength":  "Password must be at least 8 characters.",
+                 "validationPasswordMismatch":  "Password and confirm password must match.",
+                 "submittingLogin":  "Signing in...",
+                 "submittingRegister":  "Creating account...",
+                 "formSections":  {
+                                      "identity":  "Identity details",
+                                      "credentials":  "Credentials"
+                                  }
+             },
+    "home":  {
+                 "eyebrow":  "Enterprise employee access",
+                 "headline":  "A polished internal portal for secure employee access and operational visibility.",
+                 "description":  "The frontend now behaves like a production internal application with a persistent theme system, multilingual UI, reusable components, and a dashboard shell that scales.",
+                 "primaryCta":  "Enter workspace",
+                 "secondaryCta":  "Register account",
+                 "cards":  [
+                               {
+                                   "title":  "Enterprise UX",
+                                   "description":  "A real application shell with structured navigation, reusable patterns, and production-ready states."
+                               },
+                               {
+                                   "title":  "Internationalized",
+                                   "description":  "English and Vietnamese are built in, with translation files ready for future expansion."
+                               },
+                               {
+                                   "title":  "Theme personalization",
+                                   "description":  "Light and dark mode plus primary color selection are persisted across sessions."
+                               }
+                           ],
+                 "stats":  [
+                               {
+                                   "label":  "Protected routes",
+                                   "value":  "100%"
+                               },
+                               {
+                                   "label":  "Reusable UI modules",
+                                   "value":  "20+"
+                               },
+                               {
+                                   "label":  "Supported languages",
+                                   "value":  "2"
+                               }
+                           ]
+             },
+    "dashboard":  {
+                      "title":  "Operations workspace",
+                      "subtitle":  "Monitor employee access, workflow activity, and secure file handling from a unified internal dashboard.",
+                      "breadcrumbs":  {
+                                          "root":  "Workspace",
+                                          "current":  "Dashboard"
+                                      },
+                      "welcome":  "Welcome back, {{name}}",
+                      "overview":  "Secure access overview",
+                      "quickActions":  "Quick actions",
+                      "recentActivity":  "Recent activity",
+                      "recentFiles":  "Recent files",
+                      "dropzoneTitle":  "Drop files for secure upload",
+                      "dropzoneDescription":  "Drag files here or browse to add documents for secure workflow intake.",
+                      "activityFeedSubtitle":  "Latest operational updates from the workspace.",
+                      "tableTitle":  "Team operational view",
+                      "tableSubtitle":  "Preview task and compliance status with the shared enterprise table component.",
+                      "insightsTitle":  "Operational indicators",
+                      "insightsSubtitle":  "Placeholder visuals can later be replaced by real analytics without changing the layout system.",
+                      "tabs":  {
+                                   "performance":  "Performance",
+                                   "security":  "Security"
+                               },
+                      "metrics":  {
+                                      "employees":  {
+                                                        "title":  "Eligible employees",
+                                                        "trend":  "+8% this quarter"
+                                                    },
+                                      "users":  {
+                                                    "title":  "Active users",
+                                                    "trend":  "Stable this week"
+                                                },
+                                      "sessions":  {
+                                                       "title":  "Active sessions",
+                                                       "trend":  "Rotating securely"
+                                                   },
+                                      "files":  {
+                                                    "title":  "Files processed",
+                                                    "trend":  "Last 24 hours"
+                                                }
+                                  },
+                      "quickActionItems":  [
+                                               {
+                                                   "title":  "Review access logs",
+                                                   "description":  "Inspect the latest authentication events and anomalies."
+                                               },
+                                               {
+                                                   "title":  "Approve onboarding",
+                                                   "description":  "Validate pending employee onboarding records."
+                                               },
+                                               {
+                                                   "title":  "Export summary",
+                                                   "description":  "Prepare the latest operational snapshot for leadership."
+                                               }
+                                           ],
+                      "activityItems":  [
+                                            {
+                                                "title":  "New registration approved",
+                                                "description":  "Employee EMP1004 completed onboarding.",
+                                                "time":  "10 minutes ago",
+                                                "status":  "Success"
+                                            },
+                                            {
+                                                "title":  "Refresh token rotated",
+                                                "description":  "Secure session updated during dashboard restore.",
+                                                "time":  "22 minutes ago",
+                                                "status":  "Info"
+                                            },
+                                            {
+                                                "title":  "Policy acknowledgement pending",
+                                                "description":  "Three employees still need to review the new policy.",
+                                                "time":  "1 hour ago",
+                                                "status":  "Warning"
+                                            }
+                                        ],
+                      "filesItems":  [
+                                         {
+                                             "name":  "Quarterly_Access_Audit.pdf",
+                                             "meta":  "PDF � 1.2 MB"
+                                         },
+                                         {
+                                             "name":  "Onboarding_Checklist.xlsx",
+                                             "meta":  "Spreadsheet � 420 KB"
+                                         },
+                                         {
+                                             "name":  "Security_Playbook_v3.docx",
+                                             "meta":  "Document � 980 KB"
+                                         }
+                                     ],
+                      "chartLabels":  [
+                                          "Mon",
+                                          "Tue",
+                                          "Wed",
+                                          "Thu",
+                                          "Fri",
+                                          "Sat",
+                                          "Sun"
+                                      ],
+                      "performanceLabel":  "Authentication throughput",
+                      "securityLabel":  "Security readiness",
+                      "table":  {
+                                    "searchPlaceholder":  "Search employees, department, or status"
+                                },
+                      "confirmTitle":  "Confirm quick action",
+                      "confirmDescription":  "This action is currently a frontend placeholder. Keep the interaction pattern for future real workflows.",
+                      "performanceDescription":  "Weekly authentication volume across the workspace.",
+                      "securityDescription":  "A readiness view for policy, token, and route protection checks.",
+                      "previewAction":  "Export preview",
+                      "filesAction":  "Upload queue",
+                      "securityStatus":  "Protected",
+                      "performanceStatus":  "Healthy",
+                      "tableColumns":  {
+                                           "owner":  "Owner",
+                                           "task":  "Task",
+                                           "department":  "Department",
+                                           "status":  "Status",
+                                           "dueDate":  "Due date",
+                                           "actions":  "Actions"
+                                       },
+                      "quickActionConfirm":  "Proceed",
+                      "activityStatusSuccess":  "Success",
+                      "activityStatusInfo":  "Info",
+                      "activityStatusWarning":  "Warning",
+                      "uploadSectionTitle":  "Secure intake",
+                      "uploadSectionSubtitle":  "Collect sensitive files using a controlled drag-and-drop flow.",
+                      "recentFilesSubtitle":  "Most recent documents handled by the team.",
+                      "quickActionsSubtitle":  "Common actions frequently used by operations staff.",
+                      "sidebarCardTitle":  "Security posture",
+                      "sidebarCardDescription":  "JWT access tokens, refresh rotation, and protected routes are active.",
+                      "sidebarChip":  "Enterprise baseline"
+                  },
+    "table":  {
+                  "searchPlaceholder":  "Search records",
+                  "rowsPerPage":  "Rows per page",
+                  "selected":  "{{count}} selected",
+                  "filterPlaceholder":  "Filter {{column}}",
+                  "filters":  "Column filters",
+                  "clearFilters":  "Clear filters",
+                  "allOption":  "All",
+                  "columnOptionsDescription":  "Filter this column or adjust which columns are visible in the table.",
+                  "columnOptions":  "Column options",
+                  "manageColumns":  "Manage columns",
+                  "clearColumnFilter":  "Clear this filter",
+                  "filterByColumn":  "Filter {{column}}",
+                  "filterLabel":  "Filter"
+              },
+    "upload":  {
+                   "helper":  "Accepted formats: {{types}} � Up to {{size}} MB each",
+                   "invalidType":  "Unsupported file type: {{name}}",
+                   "invalidSize":  "File exceeds the maximum size: {{name}}",
+                   "empty":  "No files selected yet",
+                   "disabled":  "Upload is currently unavailable"
+               },
+    "notifications":  {
+                          "themeUpdated":  "Appearance updated.",
+                          "languageUpdated":  "Language updated.",
+                          "logoutSuccess":  "You have been signed out.",
+                          "uploadReady":  "Files are ready for upload.",
+                          "uploadCleared":  "File removed from the queue."
+                      },
+    "pages":  {
+                  "notFoundAction":  "Return to dashboard",
+                  "unauthorizedAction":  "Go back home"
+              },
+    "topbar":  {
+                   "notificationsTitle":  "Notifications",
+                   "notificationsSubtitle":  "Recent updates from your workspace and security activity.",
+                   "openSettings":  "Open preferences",
+                   "notifications":  [
+                                         {
+                                             "title":  "Security review completed",
+                                             "description":  "The latest access review was completed without critical findings.",
+                                             "time":  "12 minutes ago"
+                                         },
+                                         {
+                                             "title":  "New employee account activated",
+                                             "description":  "A newly registered employee account is ready for portal use.",
+                                             "time":  "46 minutes ago"
+                                         },
+                                         {
+                                             "title":  "Policy reminder",
+                                             "description":  "Three employees still need to acknowledge the updated access policy.",
+                                             "time":  "2 hours ago"
+                                         }
+                                     ]
+               },
+    "navChildren":  {
+                        "uploadQueue":  "Upload queue",
+                        "recentLibrary":  "Recent library",
+                        "accessAnalytics":  "Access analytics",
+                        "serviceRequests":  "Service requests",
+                        "securityPosture":  "Security posture",
+                        "helpCenter":  "Help center"
+                    },
+    "sectionPage":  {
+                        "queueTitle":  "Current queue",
+                        "workflowSubtitle":  "Use these operating steps to keep {{section}} moving without handoff gaps.",
+                        "subtitle":  "Manage {{section}} inside the {{parent}} workspace with the same enterprise shell and operational patterns.",
+                        "queueSubtitle":  "This section is ready for real backend data once the related workflow is connected to the API.",
+                        "emptyDescription":  "New records for the {{parent}} workspace will appear here after this section is connected.",
+                        "emptyAction":  "Refresh section",
+                        "infoBanner":  "{{section}} is currently using frontend sample data and layout scaffolding for the live workflow.",
+                        "badge":  "{{parent}} workspace",
+                        "emptyTitle":  "No {{section}} records are waiting",
+                        "workflowItems":  [
+                                              {
+                                                  "description":  "Validate priority, ownership, and policy requirements for {{section}} before processing.",
+                                                  "title":  "Review new work"
+                                              },
+                                              {
+                                                  "description":  "Assign a clear owner and keep follow-up steps visible across the {{parent}} workspace.",
+                                                  "title":  "Confirm accountability"
+                                              },
+                                              {
+                                                  "description":  "Document the outcome and handoff status so the next team can continue without delay.",
+                                                  "title":  "Close the loop"
+                                              }
+                                          ],
+                        "metrics":  {
+                                        "ownersTitle":  "Assigned owners",
+                                        "slaTrend":  "Current target window for {{section}}",
+                                        "slaTitle":  "Review window",
+                                        "backlogTrend":  "Items currently awaiting action in {{section}}",
+                                        "backlogTitle":  "Open items",
+                                        "ownersTrend":  "Coverage across the {{parent}} workflow"
+                                    },
+                        "workflowTitle":  "Workflow guidance"
+                    }
+}
