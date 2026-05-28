@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -24,6 +24,7 @@ import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { selectAuth } from "../features/auth/authSlice";
 import {
   selectSettings,
@@ -37,6 +38,7 @@ import { useNotifications } from "../hooks/useNotifications";
 import { PageHeader } from "../components/layout/PageHeader";
 import { SectionCard } from "../components/layout/SectionCard";
 import { formatDateLabel } from "../utils/formatters";
+import { openNotificationLink } from "../utils/notificationLinks";
 
 function getUpdateIcon(updateId) {
   if (updateId === "update-hires") {
@@ -190,6 +192,7 @@ function moveSection(order, draggedSectionId, targetSectionId) {
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const auth = useAppSelector(selectAuth);
   const settings = useAppSelector(selectSettings);
@@ -203,6 +206,18 @@ export function DashboardPage() {
   } = useNotifications();
   const [draggedSectionId, setDraggedSectionId] = useState(null);
   const [dragOverSectionId, setDragOverSectionId] = useState(null);
+
+  const handleNotificationClick = useCallback(async (item) => {
+    if (!item?.link) {
+      return;
+    }
+
+    try {
+      await markNotificationAsRead(item.id);
+    } finally {
+      openNotificationLink(item.link, navigate);
+    }
+  }, [markNotificationAsRead, navigate]);
 
   const upcomingEvent = useMemo(
     () => ({
@@ -468,7 +483,11 @@ export function DashboardPage() {
                     direction="row"
                     spacing={1.5}
                     alignItems="flex-start"
-                    sx={{ py: 1.75 }}
+                    onClick={() => void handleNotificationClick(item)}
+                    sx={{
+                      py: 1.75,
+                      cursor: item.link ? "pointer" : "default",
+                    }}
                   >
                     <Box
                       sx={{
@@ -501,7 +520,10 @@ export function DashboardPage() {
                           </Typography>
                           <IconButton
                             size="small"
-                            onClick={() => void markNotificationAsRead(item.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void markNotificationAsRead(item.id);
+                            }}
                             disabled={markingIds.includes(item.id)}
                           >
                             <DoneRoundedIcon fontSize="small" />
@@ -713,6 +735,7 @@ export function DashboardPage() {
     ],
     [
       departmentUpdates,
+      handleNotificationClick,
       markNotificationAsRead,
       markingIds,
       notifications,

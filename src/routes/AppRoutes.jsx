@@ -12,6 +12,7 @@ import { HrAdminFeaturePage } from "../pages/HrAdminFeaturePage";
 import { MealOrdersPage } from "../pages/MealOrdersPage";
 import { BookingBusPage } from "../pages/BookingBusPage";
 import { AdministratorPage } from "../pages/AdministratorPage";
+import { EWorkflowPage } from "../pages/EWorkflowPage";
 import { WorkspaceSectionPage } from "../pages/WorkspaceSectionPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { UnauthorizedPage } from "../pages/UnauthorizedPage";
@@ -53,6 +54,7 @@ export function AppRoutes() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="eworkflow" element={<EWorkflowPage />} />
         <Route path="hr-admin" element={<HrAdminPage />} />
         <Route path="hr-admin/order-meal" element={<MealOrdersPage />} />
         <Route path="hr-admin/booking-bus" element={<BookingBusPage />} />

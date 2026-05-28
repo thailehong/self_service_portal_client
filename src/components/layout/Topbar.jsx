@@ -10,7 +10,6 @@ import {
   IconButton,
   InputAdornment,
   List,
-  ListItem,
   ListItemButton,
   ListItemText,
   Menu,
@@ -42,6 +41,7 @@ import {
   getSearchableSidebarNavigationForUser,
 } from "../../app/navigation";
 import { getHrAdminFeatures } from "../../features/hrAdmin/hrAdminCatalog";
+import { openNotificationLink } from "../../utils/notificationLinks";
 
 function normalizeSearchText(value) {
   return String(value || "")
@@ -142,6 +142,19 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
     setSearchValue("");
     setSearchOpen(false);
     navigate(item.to);
+  };
+
+  const handleNotificationClick = async (item) => {
+    if (!item?.link) {
+      return;
+    }
+
+    try {
+      await markNotificationAsRead(item.id);
+    } finally {
+      setNotificationAnchor(null);
+      openNotificationLink(item.link, navigate);
+    }
   };
 
   return (
@@ -367,7 +380,15 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
             <List disablePadding>
               {notifications.map((item, index) => (
                 <Box key={item.id}>
-                  <ListItem sx={{ px: 1.5, py: 1.25 }}>
+                  <ListItemButton
+                    onClick={() => void handleNotificationClick(item)}
+                    sx={{
+                      px: 1.5,
+                      py: 1.25,
+                      alignItems: "flex-start",
+                      cursor: item.link ? "pointer" : "default",
+                    }}
+                  >
                     <ListItemText
                       sx={{ pr: 5 }}
                       primary={item.title}
@@ -400,14 +421,17 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
                         <IconButton
                           size="small"
                           edge="end"
-                          onClick={() => void markNotificationAsRead(item.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void markNotificationAsRead(item.id);
+                          }}
                           disabled={markingIds.includes(item.id)}
                         >
                           <DoneRoundedIcon fontSize="small" />
                         </IconButton>
                       </span>
                     </Tooltip>
-                  </ListItem>
+                  </ListItemButton>
                   {index !== notifications.length - 1 ? <Divider /> : null}
                 </Box>
               ))}
