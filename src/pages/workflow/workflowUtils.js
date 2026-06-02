@@ -60,6 +60,10 @@ export function getFieldInitialValue(field) {
     return null;
   }
 
+  if (field.dataType === "table") {
+    return [];
+  }
+
   if (field.defaultValue) {
     if (field.dataType === "boolean") {
       return field.defaultValue === "true";
@@ -90,6 +94,7 @@ export function flattenFields(steps) {
       stepId: step.id,
       stepName: step.stepName,
       stepOrder: step.stepOrder,
+      stepTemplate: field.template,
     })),
   );
 }
@@ -281,6 +286,12 @@ export function formatFieldValue(field, value) {
       } catch {
         return value.valueJson || "";
       }
+    case "table":
+      try {
+        return value.valueJson ? JSON.parse(value.valueJson) : [];
+      } catch {
+        return [];
+      }
     case "userpicker":
       return value.valueUser || "";
     default:
@@ -316,6 +327,12 @@ export function getFormValueFromStoredValue(field, value) {
       } catch {
         return null;
       }
+    case "table":
+      try {
+        return value.valueJson ? JSON.parse(value.valueJson) : [];
+      } catch {
+        return [];
+      }
     case "userpicker":
       return value.valueUser || "";
     default:
@@ -339,6 +356,10 @@ export function hasFieldValue(field, value) {
 
   if (field.dataType === "file") {
     return Boolean(value?.files?.length || value?.existingFiles?.length);
+  }
+
+  if (field.dataType === "table") {
+    return Array.isArray(value) && value.length > 0;
   }
 
   if (field.dataType === "stored-procedure") {
@@ -382,7 +403,9 @@ export function validateFieldForm(form) {
     return "Field key and label are required.";
   }
 
-  if ((form.dataType === "select" || form.dataType === "multi-select") && !form.options.some((option) => option.value.trim() && option.label.trim() && option.isActive)) {
+  if ((form.dataType === "select" || form.dataType === "multi-select")
+    && (form.optionSourceType || "Static") === "Static"
+    && !form.options.some((option) => option.value.trim() && option.label.trim() && option.isActive)) {
     return "Select fields require at least one active option.";
   }
 
@@ -423,6 +446,11 @@ export function downloadCsv(rows, filename, fieldLabelMap = new Map()) {
   const fieldKeys = Array.from(new Set(rows.flatMap((row) =>
     (row.Values ?? row.values ?? []).map(getReportValueFieldId).filter(Boolean)
   )));
+  const tableKeys = Array.from(new Set(rows.flatMap((row) =>
+    (row.TableRows ?? row.tableRows ?? []).flatMap((tableRow) =>
+      (tableRow.Cells ?? tableRow.cells ?? []).map((cell) => `${tableRow.FieldID ?? tableRow.fieldId}.${cell.ColumnKey ?? cell.columnKey}`)
+    )
+  )));
   const columns = makeUniqueHeaders([
     { key: "ID", header: "ID" },
     { key: "RequestNo", header: "RequestNo" },
@@ -435,6 +463,10 @@ export function downloadCsv(rows, filename, fieldLabelMap = new Map()) {
     { key: "CreatedAt", header: "CreatedAt" },
     { key: "UpdatedAt", header: "UpdatedAt" },
     ...fieldKeys.map((key) => ({ key, header: fieldLabelMap.get(key) || `Field ${key}` })),
+    ...tableKeys.map((key) => {
+      const [fieldId, columnKey] = key.split(".");
+      return { key, header: `${fieldLabelMap.get(fieldId) || `Field ${fieldId}`}.${columnKey}` };
+    }),
   ]);
   const csvRows = [
     columns.map((column) => `"${column.header.replaceAll('"', '""')}"`).join(","),
@@ -443,6 +475,14 @@ export function downloadCsv(rows, filename, fieldLabelMap = new Map()) {
         getReportValueFieldId(value),
         formatReportFieldValue(value),
       ]));
+      (row.TableRows ?? row.tableRows ?? []).forEach((tableRow) => {
+        (tableRow.Cells ?? tableRow.cells ?? []).forEach((cell) => {
+          const key = `${tableRow.FieldID ?? tableRow.fieldId}.${cell.ColumnKey ?? cell.columnKey}`;
+          const current = fieldValueMap.get(key);
+          const nextValue = formatReportFieldValue(cell);
+          fieldValueMap.set(key, current ? `${current}; ${nextValue}` : nextValue);
+        });
+      });
 
       return columns
         .map((column) => `"${String(fieldValueMap.get(column.key) ?? row[column.key] ?? row[column.key.charAt(0).toLowerCase() + column.key.slice(1)] ?? "").replaceAll('"', '""')}"`)

@@ -75,13 +75,19 @@ export function AppDataTable({
   emptyDescription,
   renderToolbarActions,
   searchPlaceholder,
+  defaultSortBy,
+  defaultSortDirection = 'asc',
 }) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
-  const [sortBy, setSortBy] = useState(columns.find((column) => column.sortable !== false)?.id || columns[0]?.id);
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortBy, setSortBy] = useState(
+    defaultSortBy && columns.some((column) => column.id === defaultSortBy)
+      ? defaultSortBy
+      : columns.find((column) => column.sortable !== false)?.id || columns[0]?.id
+  );
+  const [sortDirection, setSortDirection] = useState(defaultSortDirection);
   const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {

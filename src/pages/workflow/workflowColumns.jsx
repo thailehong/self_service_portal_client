@@ -19,6 +19,20 @@ export function workflowColumns({ onSelect, onEdit }) {
       searchAccessor: (row) => (row.isActive ? "Active" : "Inactive"),
     },
     {
+      id: "currentApprovedVersionNo",
+      label: "Active version",
+      width: 150,
+      render: (row) => row.currentApprovedVersionNo ? (
+        <Tooltip title={row.currentApprovedVersionApprovedAt ? `Approved at ${formatDateTimeLabel(row.currentApprovedVersionApprovedAt)}` : "Approved version"}>
+          <Chip size="small" color="primary" variant="outlined" label={`v${row.currentApprovedVersionNo}`} />
+        </Tooltip>
+      ) : (
+        <Chip size="small" color="warning" variant="outlined" label="No approved" />
+      ),
+      searchAccessor: (row) => row.currentApprovedVersionNo ? `v${row.currentApprovedVersionNo}` : "No approved",
+      sortAccessor: (row) => row.currentApprovedVersionNo || 0,
+    },
+    {
       id: "createdAt",
       label: "Created",
       width: 180,
@@ -54,7 +68,7 @@ export function workflowColumns({ onSelect, onEdit }) {
 
 export function requestColumns({ workflows, onOpenDetail, onSubmit, onCancel, onEdit }) {
   return [
-    { id: "requestNo", label: "Request no", minWidth: 180 },
+    { id: "requestNo", label: "Request no", minWidth: 180, sortAccessor: (row) => Number(row.id || 0) },
     { id: "title", label: "Title", minWidth: 220 },
     {
       id: "workflowId",
@@ -62,6 +76,20 @@ export function requestColumns({ workflows, onOpenDetail, onSubmit, onCancel, on
       minWidth: 190,
       render: (row) => getWorkflowName(workflows, row.workflowId),
       searchAccessor: (row) => getWorkflowName(workflows, row.workflowId),
+    },
+    {
+      id: "workflowVersionNo",
+      label: "Version",
+      width: 120,
+      render: (row) => row.workflowVersionNo ? (
+        <Tooltip title={row.workflowVersionApprovedAt ? `Approved at ${formatDateTimeLabel(row.workflowVersionApprovedAt)}` : row.effectiveVersionMode || "Workflow version"}>
+          <Chip size="small" color="primary" variant="outlined" label={`v${row.workflowVersionNo}`} />
+        </Tooltip>
+      ) : (
+        <Chip size="small" color="warning" variant="outlined" label="N/A" />
+      ),
+      searchAccessor: (row) => row.workflowVersionNo ? `v${row.workflowVersionNo}` : "N/A",
+      sortAccessor: (row) => row.workflowVersionNo || 0,
     },
     {
       id: "status",

@@ -16,6 +16,7 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
+  FormHelperText,
   IconButton,
   InputLabel,
   MenuItem,
@@ -35,9 +36,10 @@ import {
   fieldTypes,
   initialFieldForm,
   initialStepForm,
+  optionSourceTypes,
   workflowApproverPermissions,
 } from "./workflowConstants";
-import { WorkflowFileField } from "./WorkflowFieldInputs";
+import { WorkflowFileField, WorkflowMultiSelectField, WorkflowSelectField, WorkflowTableField, WorkflowTableValueDisplay } from "./WorkflowFieldInputs";
 import {
   flattenFields,
   formatFieldValue,
@@ -52,6 +54,37 @@ const storedProcedureValidationTemplate = JSON.stringify({
   procedureName: "dbo.YourStoredProcedure",
   parameters: [
     { name: "@Param1", required: true },
+    {
+      name: "@ExcelRows",
+      sourceField: "FileFieldKey",
+      dataMode: "excel-tvp",
+      typeName: "dbo.WorkflowExcelImportRow",
+      required: false,
+    },
+    {
+      name: "@TableRows",
+      sourceField: "TableFieldKey",
+      dataMode: "table-tvp",
+      typeName: "dbo.WorkflowExcelImportRow",
+      required: false,
+    },
+  ],
+}, null, 2);
+
+const optionStoredProcedureTemplate = JSON.stringify({
+  connectionName: "DefaultConnection",
+  procedureName: "dbo.GetWorkflowOptions",
+  parameters: [
+    { name: "@ParentValue", sourceFieldKey: "ParentFieldKey", required: false },
+    { name: "@Site", value: "VN", required: false },
+  ],
+}, null, 2);
+
+const optionSqlQueryTemplate = JSON.stringify({
+  connectionName: "DefaultConnection",
+  query: "SELECT Code AS [Value], Name AS [Label] FROM dbo.YourLookup WHERE (@ParentValue IS NULL OR ParentCode = @ParentValue) ORDER BY Name",
+  parameters: [
+    { name: "@ParentValue", sourceFieldKey: "ParentFieldKey", required: false },
   ],
 }, null, 2);
 
@@ -60,22 +93,56 @@ const conditionalValidationTemplate = JSON.stringify({
   requiredWhen: { fieldKey: "Answer", operator: "equals", value: "No" },
 }, null, 2);
 
+const tableValidationTemplate = JSON.stringify({
+  mode: "manual",
+  columns: [
+    { key: "EmpID", label: "Employee ID", dataType: "text", required: true, maxLength: 20 },
+    { key: "DateOfBirth", label: "Date of birth", dataType: "date", required: false },
+    { key: "Department", label: "Department", dataType: "text", required: true, maxLength: 100 },
+  ],
+}, null, 2);
+
+const getWorkflowGroupValue = (group) => {
+  const groupCode = String(group?.groupCode ?? "").trim();
+  if (groupCode) {
+    return groupCode;
+  }
+  return group?.id != null ? String(group.id) : "";
+};
+
 export const StepFormDialog = memo(function StepFormDialog({
   open,
   mode,
   form,
+  groups = [],
   error,
   submitting,
   onClose,
   onSubmit,
 }) {
   const [localForm, setLocalForm] = useState(form || initialStepForm);
+  const activeWorkflowGroups = useMemo(
+    () => (groups || []).filter((group) => group?.isActive !== false && getWorkflowGroupValue(group)),
+    [groups],
+  );
+  const selectedWorkflowGroupExists = activeWorkflowGroups.some(
+    (group) => getWorkflowGroupValue(group) === String(localForm.approverValue ?? ""),
+  );
 
   useEffect(() => {
     if (open) {
       setLocalForm(form || initialStepForm);
     }
   }, [form, open]);
+
+  useEffect(() => {
+    if (open && localForm.approverType === "Group" && !localForm.approverValue && activeWorkflowGroups.length) {
+      setLocalForm((current) => ({
+        ...current,
+        approverValue: getWorkflowGroupValue(activeWorkflowGroups[0]),
+      }));
+    }
+  }, [activeWorkflowGroups, localForm.approverType, localForm.approverValue, open]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -84,7 +151,14 @@ export const StepFormDialog = memo(function StepFormDialog({
         <Stack spacing={2.25} sx={{ pt: 1 }}>
           {error ? <Alert severity="error" variant="outlined">{error}</Alert> : null}
           <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" } }}>
-            <TextField label="Order" type="number" value={localForm.stepOrder} onChange={(event) => setLocalForm((current) => ({ ...current, stepOrder: event.target.value }))} required />
+            <TextField
+              label="Order"
+              type="number"
+              value={localForm.stepOrder}
+              helperText="Auto assigned by workflow."
+              disabled
+              required
+            />
             <TextField label="Group" type="number" value={localForm.stepGroup} onChange={(event) => setLocalForm((current) => ({ ...current, stepGroup: event.target.value }))} />
             <TextField label="Step code" value={localForm.stepCode} onChange={(event) => setLocalForm((current) => ({ ...current, stepCode: event.target.value }))} required />
           </Box>
@@ -109,6 +183,8 @@ export const StepFormDialog = memo(function StepFormDialog({
                       ? "Approver"
                       : event.target.value === "NoApproval" || event.target.value === "HOD"
                         ? event.target.value
+                        : event.target.value === "Group"
+                          ? getWorkflowGroupValue(activeWorkflowGroups[0])
                         : "",
                 }))}
               >
@@ -138,6 +214,33 @@ export const StepFormDialog = memo(function StepFormDialog({
                 multiline
                 required
               />
+            ) : localForm.approverType === "Group" ? (
+              <FormControl fullWidth required disabled={!activeWorkflowGroups.length}>
+                <InputLabel>Workflow group</InputLabel>
+                <Select
+                  label="Workflow group"
+                  value={localForm.approverValue}
+                  onChange={(event) => setLocalForm((current) => ({ ...current, approverValue: event.target.value }))}
+                >
+                  {!selectedWorkflowGroupExists && localForm.approverValue ? (
+                    <MenuItem value={localForm.approverValue}>{localForm.approverValue}</MenuItem>
+                  ) : null}
+                  {activeWorkflowGroups.map((group) => {
+                    const value = getWorkflowGroupValue(group);
+                    const label = group.groupName || group.groupCode || `Group ${group.id}`;
+                    return (
+                      <MenuItem key={value} value={value}>
+                        {label}{group.groupCode && group.groupName ? ` (${group.groupCode})` : ""}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+                <FormHelperText>
+                  {activeWorkflowGroups.length
+                    ? "Select a group configured in this workflow."
+                    : "Create an active workflow group before using Group approval."}
+                </FormHelperText>
+              </FormControl>
             ) : localForm.approverType === "NoApproval" || localForm.approverType === "HOD" ? (
               <TextField label="Approver value" value={localForm.approverType} disabled />
             ) : (
@@ -181,6 +284,21 @@ export const StepFormDialog = memo(function StepFormDialog({
 export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form, error, submitting, onClose, onSubmit }) {
   const [localForm, setLocalForm] = useState(form || initialFieldForm);
   const optionEnabled = localForm.dataType === "select" || localForm.dataType === "multi-select";
+  const optionSource = localForm.optionSourceType || "Static";
+  const validationPlaceholder = localForm.dataType === "table"
+    ? tableValidationTemplate
+    : optionEnabled && optionSource === "StoredProcedure"
+      ? optionStoredProcedureTemplate
+      : optionEnabled && optionSource === "SqlQuery"
+        ? optionSqlQueryTemplate
+        : conditionalValidationTemplate;
+  const validationHelperText = localForm.dataType === "table"
+    ? "Define table columns here. Supported column dataType values: text, number, date, datetime, boolean, select, multi-select, userpicker."
+    : optionEnabled && optionSource === "StoredProcedure"
+      ? "Stored procedure must return columns named Value and Label. parameters[].sourceFieldKey uses another field key; value/defaultValue are constants."
+      : optionEnabled && optionSource === "SqlQuery"
+        ? "SQL query must be read-only SELECT/WITH and return Value and Label columns. Use sourceFieldKey to bind a parameter to another field key."
+        : "Use visibleWhen/showWhen to control visibility and requiredWhen to make this field required only when another field has a matching value.";
 
   useEffect(() => {
     if (open) {
@@ -213,6 +331,8 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
                     validationJson:
                       dataType === "stored-procedure" && !current.validationJson?.trim()
                         ? storedProcedureValidationTemplate
+                        : dataType === "table" && !current.validationJson?.trim()
+                          ? tableValidationTemplate
                         : current.validationJson,
                   }));
                 }}
@@ -222,19 +342,48 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
             </FormControl>
             <TextField label="Default value" value={localForm.defaultValue} onChange={(event) => setLocalForm((current) => ({ ...current, defaultValue: event.target.value }))} />
           </Box>
+          {(localForm.dataType === "select" || localForm.dataType === "multi-select") ? (
+            <FormControl fullWidth>
+              <InputLabel>Option source</InputLabel>
+              <Select
+                label="Option source"
+                value={localForm.optionSourceType || "Static"}
+                onChange={(event) => {
+                  const optionSourceType = event.target.value;
+                  setLocalForm((current) => ({
+                    ...current,
+                    optionSourceType,
+                    validationJson:
+                      !current.validationJson?.trim() && optionSourceType === "StoredProcedure"
+                        ? optionStoredProcedureTemplate
+                        : !current.validationJson?.trim() && optionSourceType === "SqlQuery"
+                          ? optionSqlQueryTemplate
+                          : current.validationJson,
+                  }));
+                }}
+              >
+                {optionSourceTypes.map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}
+              </Select>
+            </FormControl>
+          ) : null}
+          {optionEnabled && optionSource !== "Static" ? (
+            <Alert severity="info" variant="outlined">
+              Result set must include <strong>Value</strong> and <strong>Label</strong>. Use <strong>sourceFieldKey</strong> to pass the current value of another field as a parameter; use <strong>value</strong> or <strong>defaultValue</strong> for constants.
+            </Alert>
+          ) : null}
           <TextField
             label="Validation JSON"
             value={localForm.validationJson}
             onChange={(event) => setLocalForm((current) => ({ ...current, validationJson: event.target.value }))}
-            placeholder={conditionalValidationTemplate}
-            helperText="Use visibleWhen/showWhen to control visibility and requiredWhen to make this field required only when another field has a matching value."
+            placeholder={validationPlaceholder}
+            helperText={validationHelperText}
             minRows={2}
             multiline
             fullWidth
           />
           <FormControlLabel control={<Checkbox checked={localForm.isRequired} onChange={(event) => setLocalForm((current) => ({ ...current, isRequired: event.target.checked }))} />} label="Required field" />
 
-          {optionEnabled ? (
+          {optionEnabled && (localForm.optionSourceType || "Static") === "Static" ? (
             <Stack spacing={1.5}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography variant="subtitle2">Options</Typography>
@@ -289,7 +438,6 @@ export function DecisionDialog({ state, submitting, error, fields, values, onVal
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
               {activeFields.map((field) => {
                 const value = values[field.id];
-                const activeOptions = field.options.filter((option) => option.isActive);
                 const setValue = (nextValue) => onValueChange(field.id, nextValue);
                 const required = isFieldRequiredNow(field, fields, values);
 
@@ -305,26 +453,13 @@ export function DecisionDialog({ state, submitting, error, fields, values, onVal
 
                 if (field.dataType === "select") {
                   return (
-                    <FormControl key={field.id} fullWidth required={required}>
-                      <InputLabel>{field.label}</InputLabel>
-                      <Select label={field.label} value={value || ""} onChange={(event) => setValue(event.target.value)}>
-                        {activeOptions.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
-                      </Select>
-                    </FormControl>
+                    <WorkflowSelectField key={field.id} field={field} value={value} onChange={setValue} required={required} values={values} fields={fields} />
                   );
                 }
 
                 if (field.dataType === "multi-select") {
                   return (
-                    <Autocomplete
-                      key={field.id}
-                      multiple
-                      options={activeOptions}
-                      value={activeOptions.filter((option) => (value || []).includes(option.value))}
-                      onChange={(_, options) => setValue(options.map((option) => option.value))}
-                      getOptionLabel={(option) => option.label}
-                      renderInput={(params) => <TextField {...params} label={field.label} required={required} />}
-                    />
+                    <WorkflowMultiSelectField key={field.id} field={field} value={value} onChange={setValue} required={required} values={values} fields={fields} />
                   );
                 }
 
@@ -364,6 +499,18 @@ export function DecisionDialog({ state, submitting, error, fields, values, onVal
                   );
                 }
 
+                if (field.dataType === "table") {
+                  return (
+                    <Box key={field.id} sx={{ gridColumn: "1 / -1", minWidth: 0 }}>
+                      <WorkflowTableField
+                        field={{ ...field, isRequired: required }}
+                        value={value}
+                        onChange={setValue}
+                      />
+                    </Box>
+                  );
+                }
+
                 return (
                   <TextField
                     key={field.id}
@@ -390,6 +537,43 @@ export function DecisionDialog({ state, submitting, error, fields, values, onVal
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function RequestAuditTimeline({ audit = [] }) {
+  if (!audit.length) {
+    return <Alert severity="info" variant="outlined">No audit records yet.</Alert>;
+  }
+
+  return (
+    <Stack spacing={0.75}>
+      {audit.map((item, index) => {
+        const statusText = item.fromStatus || item.toStatus ? `${item.fromStatus || "-"} -> ${item.toStatus || "-"}` : "";
+        return (
+          <Box key={item.id || `${item.action}-${item.createdAt}-${index}`} sx={{ display: "grid", gridTemplateColumns: "20px minmax(0, 1fr)", columnGap: 1.25 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: item.action === "Reject" ? "error.main" : item.action === "Approve" ? "success.main" : "primary.main", mt: 1 }} />
+              {index < audit.length - 1 ? <Box sx={{ width: "1px", flex: 1, bgcolor: "rgba(0, 0, 0, 0.16)", minHeight: 34, mt: 0.75 }} /> : null}
+            </Box>
+            <Box sx={{ pb: index < audit.length - 1 ? 2.5 : 0, minWidth: 0 }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }} justifyContent="space-between">
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle2" sx={{ overflowWrap: "anywhere" }}>{item.action}</Typography>
+                  {item.toStatus ? <Chip label={item.toStatus} size="small" color={getStatusColor(item.toStatus)} /> : null}
+                </Stack>
+                <Typography variant="caption" color="text.secondary">{item.createdAt ? dayjs(item.createdAt).format("DD/MM/YYYY HH:mm") : ""}</Typography>
+              </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25, overflowWrap: "anywhere" }}>
+                {item.actor || "System"}{statusText ? ` - ${statusText}` : ""}
+              </Typography>
+              {item.comment ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{item.comment}</Typography>
+              ) : null}
+            </Box>
+          </Box>
+        );
+      })}
+    </Stack>
   );
 }
 
@@ -431,7 +615,7 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
           {error ? <Alert severity="error" variant="outlined">{error}</Alert> : null}
           {detail?.instance ? (
             <>
-              <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" } }}>
+              <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(4, minmax(0, 1fr))" } }}>
                 <Stack spacing={0.5}>
                   <Typography variant="caption" color="text.secondary">Request no</Typography>
                   <Typography variant="subtitle2">{detail.instance.requestNo}</Typography>
@@ -439,6 +623,17 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
                 <Stack spacing={0.5}>
                   <Typography variant="caption" color="text.secondary">Workflow</Typography>
                   <Typography variant="subtitle2">{getWorkflowName(workflows, detail.instance.workflowId)}</Typography>
+                </Stack>
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" color="text.secondary">Workflow version</Typography>
+                  {detail.instance.workflowVersionNo ? (
+                    <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+                      <Chip size="small" color="primary" variant="outlined" label={`v${detail.instance.workflowVersionNo}`} />
+                      <Typography variant="caption" color="text.secondary">{detail.instance.effectiveVersionMode}</Typography>
+                    </Stack>
+                  ) : (
+                    <Typography variant="subtitle2">N/A</Typography>
+                  )}
                 </Stack>
                 <Stack spacing={0.5}>
                   <Typography variant="caption" color="text.secondary">Status</Typography>
@@ -451,8 +646,9 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
                 <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" } }}>
                   {detailFields.map((field) => {
                     const value = valueMap.get(String(field.id));
+                    const tableRows = (detail?.tableRows || []).filter((row) => String(row.fieldId) === String(field.id));
                     return (
-                      <Box key={`${field.stepId || "field"}-${field.id}`} sx={{ p: 1.5, minWidth: 0, borderRadius: 1, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+                      <Box key={`${field.stepId || "field"}-${field.id}`} sx={{ p: 1.5, minWidth: 0, borderRadius: 1, border: (theme) => `1px solid ${theme.palette.divider}`, gridColumn: field.dataType === "table" ? "1 / -1" : undefined }}>
                         <Typography variant="caption" color="text.secondary">{field?.label || `Field #${field.id}`}</Typography>
                         {field.dataType === "file" ? (
                           value?.files?.length ? (
@@ -481,6 +677,8 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
                           ) : (
                             <Typography variant="body2" color="text.secondary">&nbsp;</Typography>
                           )
+                        ) : field.dataType === "table" ? (
+                          <WorkflowTableValueDisplay field={field} value={formatFieldValue(field, value)} tableRows={tableRows} />
                         ) : (
                           <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{formatFieldValue(field, value) || "\u00a0"}</Typography>
                         )}
@@ -508,7 +706,8 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
               <Divider />
               <Stack spacing={1.25}>
                 <Typography variant="h6">Audit</Typography>
-                {detail.audit.map((audit) => (
+                <RequestAuditTimeline audit={detail.audit} />
+                {false && detail.audit.map((audit) => (
                   <Box key={audit.id || `${audit.action}-${audit.createdAt}`} sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", md: "160px 1fr 220px" }, p: 1.5, borderRadius: 1, bgcolor: "background.default" }}>
                     <Typography variant="body2">{audit.action}</Typography>
                     <Typography variant="body2" color="text.secondary">{audit.comment || `${audit.fromStatus || "-"} -> ${audit.toStatus || "-"}`}</Typography>

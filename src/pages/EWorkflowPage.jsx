@@ -4,10 +4,12 @@ import AssessmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
+import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {
   Alert,
@@ -48,7 +50,7 @@ import { SectionCard } from "../components/layout/SectionCard";
 import { useNotifier } from "../hooks/useNotifier";
 import { workflowApi } from "../services/api/workflowApi";
 import { formatDateTimeLabel } from "../utils/formatters";
-import { WorkflowFileField } from "./workflow/WorkflowFieldInputs";
+import { WorkflowFileField, WorkflowMultiSelectField, WorkflowSelectField, WorkflowTableField } from "./workflow/WorkflowFieldInputs";
 import {
   DecisionDialog,
   FieldFormDialog,
@@ -58,12 +60,15 @@ import {
 import { pendingColumns, requestColumns, workflowColumns } from "./workflow/workflowColumns";
 import {
   initialFieldForm,
+  initialGroupForm,
   initialPermissionForm,
   initialStepForm,
+  initialTransitionRuleForm,
   initialWorkflowForm,
   permissions,
   principalTypes,
   statusOptions,
+  versionModes,
 } from "./workflow/workflowConstants";
 import {
   buildRequestValuesFromDetail,
@@ -203,6 +208,107 @@ function RequestDetailDialog({ open, detail, workflows, workflowDetail, loading,
   );
 }
 
+function WorkflowVersionTimeline({ versions = [], activeVersionId, configSubmitting, onAction }) {
+  if (!versions.length) {
+    return <Alert severity="info" variant="outlined">No version history yet.</Alert>;
+  }
+
+  const buildEvents = (version) => [
+    { label: "Changed", actor: version.modifiedBy || version.createdBy, at: version.modifiedAt || version.createdAt },
+    version.submittedAt ? { label: "Submitted", actor: version.submittedBy, at: version.submittedAt } : null,
+    version.approvedAt ? { label: "Approved", actor: version.approvedBy, at: version.approvedAt } : null,
+    version.rejectedAt ? { label: "Rejected", actor: version.rejectedBy, at: version.rejectedAt } : null,
+  ].filter(Boolean);
+
+  return (
+    <Stack spacing={1}>
+      {versions.map((version, index) => {
+        const isActive = String(activeVersionId || "") === String(version.id || "");
+        const events = buildEvents(version);
+        return (
+          <Box key={version.id} sx={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr)", columnGap: 1.25 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: isActive ? "success.main" : version.status === "Rejected" ? "error.main" : version.status === "PendingApproval" ? "warning.main" : "primary.main", mt: 1.25 }} />
+              {index < versions.length - 1 ? <Box sx={{ width: "1px", flex: 1, bgcolor: "rgba(0, 0, 0, 0.16)", minHeight: 64, mt: 0.75 }} /> : null}
+            </Box>
+            <Box sx={{ pb: index < versions.length - 1 ? 3 : 0, minWidth: 0 }}>
+              <Box sx={{ p: 1.5, borderRadius: 1, border: (theme) => `1px solid ${isActive ? theme.palette.success.main : theme.palette.divider}`, bgcolor: isActive ? "rgba(46, 125, 50, 0.08)" : "background.default" }}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }} justifyContent="space-between">
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                    <Typography variant="subtitle2">v{version.versionNo}</Typography>
+                    <Chip label={version.status} size="small" color={version.status === "Approved" ? "success" : version.status === "PendingApproval" ? "warning" : version.status === "Rejected" ? "error" : "default"} />
+                    {isActive ? <Chip label="Active" size="small" color="success" variant="outlined" /> : null}
+                  </Stack>
+                  {version.status === "PendingApproval" ? (
+                    <Stack direction="row" spacing={1}>
+                      <Button size="small" onClick={() => onAction(version, "Approve")} disabled={configSubmitting}>Approve</Button>
+                      <Button size="small" color="error" onClick={() => onAction(version, "Reject")} disabled={configSubmitting}>Reject</Button>
+                    </Stack>
+                  ) : null}
+                </Stack>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                  {version.changeSummary || version.comment || "No change summary"}
+                </Typography>
+                <Box sx={{ display: "grid", gap: 0.75, mt: 1.25 }}>
+                  {events.map((event) => (
+                    <Box key={`${version.id}-${event.label}`} sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", sm: "100px minmax(0, 1fr) 160px" }, alignItems: "center" }}>
+                      <Typography variant="caption" color="text.secondary">{event.label}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>{event.actor || "N/A"}</Typography>
+                      <Typography variant="caption" color="text.secondary">{event.at ? formatDateTimeLabel(event.at) : ""}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+                {version.comment ? (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>Comment: {version.comment}</Typography>
+                ) : null}
+              </Box>
+            </Box>
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
+
+function getWorkflowStepLabel(step) {
+  if (!step) {
+    return "";
+  }
+  const code = step.stepCode ? `${step.stepCode} - ` : "";
+  return `${code}${step.stepName || `Step #${step.id}`}`;
+}
+
+function getWorkflowStepMeta(step) {
+  if (!step) {
+    return "";
+  }
+  const parts = [`Order ${step.stepOrder ?? "-"}`];
+  if (step.stepGroup !== null && step.stepGroup !== undefined && step.stepGroup !== "") {
+    parts.push(`Group ${step.stepGroup}`);
+  }
+  if (step.approverType) {
+    parts.push(`Approver: ${step.approverType}${step.approverValue ? ` (${step.approverValue})` : ""}`);
+  }
+  return parts.join(" | ");
+}
+
+function getTransitionTargetLabel(rule, stepById) {
+  if (rule.targetType === "SpecificStep" || rule.targetType === "AlternatePath") {
+    const targetStep = stepById.get(String(rule.targetStepId));
+    return targetStep ? getWorkflowStepLabel(targetStep) : `Target step #${rule.targetStepId || "-"}`;
+  }
+  if (rule.targetType === "NextStep") {
+    return "Next step by order";
+  }
+  if (rule.targetType === "Complete") {
+    return "Complete request";
+  }
+  if (rule.targetType === "RejectRequest") {
+    return "Reject request";
+  }
+  return rule.targetType || "-";
+}
+
 export function EWorkflowPage() {
   const { t } = useTranslation();
   const { notify } = useNotifier();
@@ -251,6 +357,11 @@ export function EWorkflowPage() {
   const [permissionError, setPermissionError] = useState("");
   const [configSubmitting, setConfigSubmitting] = useState(false);
   const [permissionDelete, setPermissionDelete] = useState(null);
+  const [groupForm, setGroupForm] = useState(initialGroupForm);
+  const [groupError, setGroupError] = useState("");
+  const [transitionRuleForm, setTransitionRuleForm] = useState(initialTransitionRuleForm);
+  const [transitionError, setTransitionError] = useState("");
+  const [versionComment, setVersionComment] = useState("");
 
   const [detailState, setDetailState] = useState({ open: false, request: null });
   const [openedQueryRequestId, setOpenedQueryRequestId] = useState("");
@@ -270,13 +381,21 @@ export function EWorkflowPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState("");
 
-  const startWorkflows = workflows.filter((workflow) => workflow.isActive && workflow.access.canSubmit);
+  const startWorkflows = workflows.filter((workflow) => workflow.isActive && workflow.access.canSubmit && workflow.currentApprovedVersionId);
   const designerWorkflows = workflows.filter((workflow) => workflow.access.canManage);
   const reportWorkflows = workflows.filter((workflow) => workflow.access.canReport);
   const startSteps = useMemo(() => getFirstOrderSteps(startDetail?.steps || []), [startDetail]);
   const startFields = useMemo(() => getFirstOrderFields(startDetail?.steps || []).filter(isVisibleInputField), [startDetail]);
   const activeStartFields = useMemo(() => getActiveInputFields(startFields, requestValues), [startFields, requestValues]);
   const activeStartFieldIds = useMemo(() => new Set(activeStartFields.map((field) => field.id)), [activeStartFields]);
+  const designerStepById = useMemo(
+    () => new Map((designerDetail?.steps || []).map((step) => [String(step.id), step])),
+    [designerDetail],
+  );
+  const nextDesignerStepOrder = useMemo(
+    () => Math.max(0, ...(designerDetail?.steps || []).map((step) => Number(step.stepOrder) || 0)) + 1,
+    [designerDetail],
+  );
 
   const loadWorkflows = async () => {
     setWorkflowsLoading(true);
@@ -285,7 +404,7 @@ export function EWorkflowPage() {
     try {
       const nextWorkflows = await workflowApi.getWorkflows();
       setWorkflows(nextWorkflows);
-      setSelectedStartWorkflowId((current) => current && nextWorkflows.some((item) => String(item.id) === String(current)) ? current : "");
+      setSelectedStartWorkflowId((current) => current && nextWorkflows.some((item) => String(item.id) === String(current) && item.isActive && item.access.canSubmit && item.currentApprovedVersionId) ? current : "");
       setDesignerWorkflowId((current) => current && nextWorkflows.some((item) => String(item.id) === String(current)) ? current : "");
     } catch (error) {
       setWorkflowsError(getErrorMessage(error, "Could not load workflows."));
@@ -657,6 +776,7 @@ export function EWorkflowPage() {
       description: item.description,
       isActive: item.isActive,
       isPublic: item.isPublic,
+      versionMode: item.versionMode || "SnapshotOnCreate",
       mail: item.mail || "",
       mailProfileName: item.mailProfileName || "",
     } : initialWorkflowForm);
@@ -715,7 +835,7 @@ export function EWorkflowPage() {
       isRequired: step.isRequired,
       minApproveCount: step.minApproveCount ?? "",
       reminderHours: step.reminderHours ?? "",
-    } : { ...initialStepForm, stepOrder: (designerDetail?.steps?.length || 0) + 1 });
+    } : { ...initialStepForm, stepOrder: nextDesignerStepOrder });
   };
 
   const closeStepDialog = () => {
@@ -774,6 +894,44 @@ export function EWorkflowPage() {
     }
   };
 
+  const handleUploadFieldTemplate = async (field, file) => {
+    if (!field || !file) {
+      return;
+    }
+
+    setConfigSubmitting(true);
+    setDesignerError("");
+    try {
+      await workflowApi.uploadFieldTemplate(field.id, file);
+      notify({ message: "Field template uploaded.", severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+      await refreshStartDetailIfSameWorkflow(designerWorkflowId);
+    } catch (error) {
+      setDesignerError(getErrorMessage(error, "Could not upload field template."));
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleDownloadFieldTemplate = async (field) => {
+    if (!field) {
+      return;
+    }
+
+    setDesignerError("");
+    try {
+      const result = await workflowApi.downloadFieldTemplate(field.id);
+      const url = URL.createObjectURL(result.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = field.template?.fileName || `${field.fieldKey || "field"}_template.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setDesignerError(getErrorMessage(error, "Could not download field template."));
+    }
+  };
+
   const openFieldDialog = (mode, step, field = null) => {
     setFieldDialog({ open: true, mode, item: field, step });
     setFieldSubmitError("");
@@ -783,6 +941,7 @@ export function EWorkflowPage() {
       dataType: field.dataType,
       isRequired: field.isRequired,
       defaultValue: field.defaultValue || "",
+      optionSourceType: field.optionSourceType || "Static",
       validationJson: field.validationJson || "",
       displayOrder: field.displayOrder,
       options: field.options.map((option) => ({
@@ -806,6 +965,20 @@ export function EWorkflowPage() {
     const validationError = validateFieldForm(nextFieldForm);
     if (validationError) {
       setFieldSubmitError(validationError);
+      return;
+    }
+
+    const normalizedFieldKey = nextFieldForm.fieldKey.trim().toLowerCase();
+    const currentFieldId = fieldDialog.mode === "edit" ? fieldDialog.item?.id : null;
+    const duplicateFieldEntry = (designerDetail?.steps || [])
+      .flatMap((step) => (step.fields || []).map((field) => ({ step, field })))
+      .find(({ field }) => String(field.id) !== String(currentFieldId || "") && field.fieldKey?.trim().toLowerCase() === normalizedFieldKey);
+    if (duplicateFieldEntry) {
+      setFieldSubmitError(
+        String(duplicateFieldEntry.step.id) === String(fieldDialog.step?.id)
+          ? "Field key already exists in this step."
+          : `Field key already exists in this workflow at step ${duplicateFieldEntry.step.stepName}.`,
+      );
       return;
     }
 
@@ -867,6 +1040,7 @@ export function EWorkflowPage() {
       setPermissionForm(initialPermissionForm);
       notify({ message: "Permission assigned.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
+      await refreshStartDetailIfSameWorkflow(designerWorkflowId);
     } catch (error) {
       setPermissionError(getErrorMessage(error, "Could not assign permission."));
     } finally {
@@ -886,8 +1060,116 @@ export function EWorkflowPage() {
       setPermissionDelete(null);
       notify({ message: "Permission removed.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
+      await refreshStartDetailIfSameWorkflow(designerWorkflowId);
     } catch (error) {
       notify({ message: getErrorMessage(error, "Could not remove permission."), severity: "error" });
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleCreateGroup = async (event) => {
+    event.preventDefault();
+    if (!groupForm.groupCode.trim() || !groupForm.groupName.trim()) {
+      setGroupError("Group code and name are required.");
+      return;
+    }
+
+    setConfigSubmitting(true);
+    setGroupError("");
+    try {
+      await workflowApi.createGroup(designerWorkflowId, groupForm);
+      setGroupForm(initialGroupForm);
+      notify({ message: "Group saved.", severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+    } catch (error) {
+      setGroupError(getErrorMessage(error, "Could not save group."));
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleDeleteGroup = async (group) => {
+    setConfigSubmitting(true);
+    setGroupError("");
+    try {
+      await workflowApi.deleteGroup(group.id);
+      notify({ message: "Group deleted.", severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+    } catch (error) {
+      setGroupError(getErrorMessage(error, "Could not delete group."));
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleCreateTransitionRule = async (event) => {
+    event.preventDefault();
+    if (!transitionRuleForm.fromStepId) {
+      setTransitionError("From step is required.");
+      return;
+    }
+    if (["SpecificStep", "AlternatePath"].includes(transitionRuleForm.targetType) && !transitionRuleForm.targetStepId) {
+      setTransitionError("Target step is required for SpecificStep or AlternatePath.");
+      return;
+    }
+
+    setConfigSubmitting(true);
+    setTransitionError("");
+    try {
+      await workflowApi.createTransitionRule(designerWorkflowId, transitionRuleForm);
+      setTransitionRuleForm(initialTransitionRuleForm);
+      notify({ message: "Transition rule saved.", severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+    } catch (error) {
+      setTransitionError(getErrorMessage(error, "Could not save transition rule."));
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleDeleteTransitionRule = async (rule) => {
+    setConfigSubmitting(true);
+    setTransitionError("");
+    try {
+      await workflowApi.deleteTransitionRule(rule.id);
+      notify({ message: "Transition rule deleted.", severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+    } catch (error) {
+      setTransitionError(getErrorMessage(error, "Could not delete transition rule."));
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleSubmitVersion = async () => {
+    setConfigSubmitting(true);
+    try {
+      await workflowApi.submitVersion(designerWorkflowId, versionComment);
+      setVersionComment("");
+      notify({ message: "Workflow version submitted.", severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+    } catch (error) {
+      notify({ message: getErrorMessage(error, "Could not submit version."), severity: "error" });
+    } finally {
+      setConfigSubmitting(false);
+    }
+  };
+
+  const handleVersionAction = async (version, action) => {
+    setConfigSubmitting(true);
+    try {
+      if (action === "Approve") {
+        await workflowApi.approveVersion(version.id, versionComment);
+      } else {
+        await workflowApi.rejectVersion(version.id, versionComment);
+      }
+      setVersionComment("");
+      notify({ message: `Version ${action.toLowerCase()}d.`, severity: "success" });
+      await loadDesignerDetail(designerWorkflowId);
+      await loadWorkflows();
+    } catch (error) {
+      notify({ message: getErrorMessage(error, `Could not ${action.toLowerCase()} version.`), severity: "error" });
     } finally {
       setConfigSubmitting(false);
     }
@@ -1003,25 +1285,13 @@ export function EWorkflowPage() {
 
     if (field.dataType === "select") {
       return (
-        <FormControl fullWidth required={required}>
-          <InputLabel>{field.label}</InputLabel>
-          <Select label={field.label} value={value || ""} onChange={(event) => setValue(event.target.value)}>
-            {activeOptions.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
-          </Select>
-        </FormControl>
+        <WorkflowSelectField field={field} value={value} onChange={setValue} required={required} values={requestValues} fields={startFields} />
       );
     }
 
     if (field.dataType === "multi-select") {
       return (
-        <Autocomplete
-          multiple
-          options={activeOptions}
-          value={activeOptions.filter((option) => (value || []).includes(option.value))}
-          onChange={(_, options) => setValue(options.map((option) => option.value))}
-          getOptionLabel={(option) => option.label}
-          renderInput={(params) => <TextField {...params} label={field.label} required={required} />}
-        />
+        <WorkflowMultiSelectField field={field} value={value} onChange={setValue} required={required} values={requestValues} fields={startFields} />
       );
     }
 
@@ -1050,6 +1320,16 @@ export function EWorkflowPage() {
     if (field.dataType === "file") {
       return (
         <WorkflowFileField
+          field={{ ...field, isRequired: required }}
+          value={value}
+          onChange={setValue}
+        />
+      );
+    }
+
+    if (field.dataType === "table") {
+      return (
+        <WorkflowTableField
           field={{ ...field, isRequired: required }}
           value={value}
           onChange={setValue}
@@ -1195,7 +1475,7 @@ export function EWorkflowPage() {
                               activeStartFieldIds.has(field.id)
                               && isFieldConditionVisible(field, startFields, requestValues)
                             ).map((field) => (
-                              <Box key={field.id}>{renderDynamicField({ ...field, stepId: step.id, stepName: step.stepName, stepOrder: step.stepOrder })}</Box>
+                              <Box key={field.id}>{renderDynamicField({ ...field, stepId: step.id, stepName: step.stepName, stepOrder: step.stepOrder, stepTemplate: field.template })}</Box>
                             ))}
                           </Box>
                         </Stack>
@@ -1217,7 +1497,7 @@ export function EWorkflowPage() {
                 )}
               </>
             ) : (
-              <EmptyState title="No workflow available" description="A workflow must be active and assigned to you before you can create requests." />
+              <EmptyState title="No workflow available" description="A workflow must be active, assigned to you, and have an approved version before you can create requests." />
             )}
           </Stack>
         </SectionCard>
@@ -1238,6 +1518,8 @@ export function EWorkflowPage() {
               loading={myRequestsLoading}
               defaultRowsPerPage={10}
               pageSizeOptions={[10, 25, 50]}
+              defaultSortBy="requestNo"
+              defaultSortDirection="desc"
               searchPlaceholder="Search requests"
               emptyTitle="No workflow requests"
               emptyDescription="Created workflow requests will appear here."
@@ -1315,7 +1597,7 @@ export function EWorkflowPage() {
                               {step.stepCode} · order {step.stepOrder} · {step.approverType}: {step.approverValue}
                             </Typography>
                           </Stack>
-                          <Stack direction="row" spacing={1}>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Button size="small" startIcon={<EditRoundedIcon />} onClick={() => openStepDialog("edit", step)}>Edit step</Button>
                             <Button size="small" startIcon={<AddRoundedIcon />} onClick={() => openFieldDialog("create", step)}>Add field</Button>
                             <Button size="small" color="error" startIcon={<DeleteOutlineRoundedIcon />} onClick={() => setStepDelete(step)} disabled={configSubmitting}>Delete step</Button>
@@ -1332,6 +1614,29 @@ export function EWorkflowPage() {
                                 <Chip label={field.dataType} size="small" variant="outlined" />
                                 <Chip label={field.isRequired ? "Required" : "Optional"} size="small" color={field.isRequired ? "warning" : "default"} />
                                 <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
+                                  {field.dataType === "file" ? (
+                                    <Tooltip title="Upload Excel template">
+                                      <IconButton size="small" color="secondary" component="label" disabled={configSubmitting}>
+                                        <UploadFileRoundedIcon fontSize="small" />
+                                        <input
+                                          type="file"
+                                          accept=".xlsx"
+                                          hidden
+                                          onChange={(event) => {
+                                            void handleUploadFieldTemplate(field, event.target.files?.[0]);
+                                            event.target.value = "";
+                                          }}
+                                        />
+                                      </IconButton>
+                                    </Tooltip>
+                                  ) : null}
+                                  {field.dataType === "file" && field.template ? (
+                                    <Tooltip title={field.template.fileName || "Download Excel template"}>
+                                      <IconButton size="small" color="primary" onClick={() => void handleDownloadFieldTemplate(field)} disabled={configSubmitting}>
+                                        <DownloadRoundedIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  ) : null}
                                   <Tooltip title="Edit field">
                                     <IconButton size="small" color="primary" onClick={() => openFieldDialog("edit", step, field)} disabled={configSubmitting}>
                                       <EditRoundedIcon fontSize="small" />
@@ -1359,21 +1664,27 @@ export function EWorkflowPage() {
                 <Stack spacing={2}>
                   <Typography variant="h6">Permissions</Typography>
                   {permissionError ? <Alert severity="error" variant="outlined">{permissionError}</Alert> : null}
-                  <Box component="form" onSubmit={handleAssignPermission} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "180px 1fr 180px auto" }, alignItems: "center" }}>
+                  <Box component="form" onSubmit={handleAssignPermission} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "180px minmax(260px, 1fr) 180px auto" }, alignItems: "start" }}>
                     <FormControl fullWidth>
                       <InputLabel>Principal type</InputLabel>
                       <Select label="Principal type" value={permissionForm.principalType} onChange={(event) => setPermissionForm((current) => ({ ...current, principalType: event.target.value, principalValue: "" }))}>
                         {principalTypes.map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}
                       </Select>
                     </FormControl>
-                    <TextField label="Email / username" value={permissionForm.principalValue} onChange={(event) => setPermissionForm((current) => ({ ...current, principalValue: event.target.value }))} required />
+                    <TextField
+                      label={permissionForm.principalType === "Group" ? "Workflow group ID / code" : "Email / username"}
+                      value={permissionForm.principalValue}
+                      onChange={(event) => setPermissionForm((current) => ({ ...current, principalValue: event.target.value }))}
+                      required
+                      fullWidth
+                    />
                     <FormControl fullWidth>
                       <InputLabel>Permission</InputLabel>
                       <Select label="Permission" value={permissionForm.permission} onChange={(event) => setPermissionForm((current) => ({ ...current, permission: event.target.value }))}>
                         {permissions.map((permission) => <MenuItem key={permission} value={permission}>{permission}</MenuItem>)}
                       </Select>
                     </FormControl>
-                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting}>Assign</Button>
+                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56, whiteSpace: "nowrap" }}>Assign</Button>
                   </Box>
                   <Box sx={{ display: "grid", gap: 1 }}>
                     {designerDetail.permissions.map((permission) => (
@@ -1389,6 +1700,148 @@ export function EWorkflowPage() {
                       </Box>
                     ))}
                   </Box>
+                </Stack>
+
+                <Divider />
+
+                <Stack spacing={2}>
+                  <Typography variant="h6">Groups</Typography>
+                  {groupError ? <Alert severity="error" variant="outlined">{groupError}</Alert> : null}
+                  <Box component="form" onSubmit={handleCreateGroup} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "160px 220px minmax(280px, 1fr) auto" }, alignItems: "start" }}>
+                    <TextField label="Code" value={groupForm.groupCode} onChange={(event) => setGroupForm((current) => ({ ...current, groupCode: event.target.value }))} required fullWidth />
+                    <TextField label="Name" value={groupForm.groupName} onChange={(event) => setGroupForm((current) => ({ ...current, groupName: event.target.value }))} required fullWidth />
+                    <TextField label="Members" value={groupForm.members} onChange={(event) => setGroupForm((current) => ({ ...current, members: event.target.value }))} helperText="Email/username separated by comma, semicolon, or new line." fullWidth />
+                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56, whiteSpace: "nowrap" }}>Save group</Button>
+                  </Box>
+                  <Box sx={{ display: "grid", gap: 1 }}>
+                    {(designerDetail.groups || []).map((group) => (
+                      <Box key={group.id} sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "140px 1fr 2fr auto" }, alignItems: "center", p: 1.25, borderRadius: 1, bgcolor: "background.default" }}>
+                        <Chip label={group.groupCode} size="small" variant="outlined" />
+                        <Typography variant="body2">{group.groupName}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>{group.members.map((member) => member.actor).join("; ") || "No members"}</Typography>
+                        <Tooltip title="Delete group">
+                          <IconButton size="small" color="error" onClick={() => handleDeleteGroup(group)} disabled={configSubmitting}>
+                            <DeleteOutlineRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    ))}
+                  </Box>
+                </Stack>
+
+                <Divider />
+
+                <Stack spacing={2}>
+                  <Typography variant="h6">Transition rules</Typography>
+                  {transitionError ? <Alert severity="error" variant="outlined">{transitionError}</Alert> : null}
+                  <Box component="form" onSubmit={handleCreateTransitionRule} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1.3fr 130px 150px 1.5fr 90px auto" }, alignItems: "start" }}>
+                    <FormControl fullWidth>
+                      <InputLabel>From step</InputLabel>
+                      <Select label="From step" value={transitionRuleForm.fromStepId} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, fromStepId: event.target.value }))}>
+                        {designerDetail.steps.map((step) => (
+                          <MenuItem key={step.id} value={step.id}>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="body2">{getWorkflowStepLabel(step)}</Typography>
+                              <Typography variant="caption" color="text.secondary">{getWorkflowStepMeta(step)}</Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl fullWidth>
+                      <InputLabel>Action</InputLabel>
+                      <Select label="Action" value={transitionRuleForm.action} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, action: event.target.value }))}>
+                        <MenuItem value="Approve">Approve</MenuItem>
+                        <MenuItem value="Reject">Reject</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl fullWidth>
+                      <InputLabel>Target</InputLabel>
+                      <Select
+                        label="Target"
+                        value={transitionRuleForm.targetType}
+                        onChange={(event) => setTransitionRuleForm((current) => ({
+                          ...current,
+                          targetType: event.target.value,
+                          targetStepId: ["SpecificStep", "AlternatePath"].includes(event.target.value) ? current.targetStepId : "",
+                        }))}
+                      >
+                        {["NextStep", "SpecificStep", "Complete", "RejectRequest", "AlternatePath"].map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                    <FormControl fullWidth disabled={!["SpecificStep", "AlternatePath"].includes(transitionRuleForm.targetType)}>
+                      <InputLabel>Target step</InputLabel>
+                      <Select
+                        label="Target step"
+                        value={transitionRuleForm.targetStepId}
+                        onChange={(event) => setTransitionRuleForm((current) => ({ ...current, targetStepId: event.target.value }))}
+                        renderValue={(value) => getWorkflowStepLabel(designerStepById.get(String(value))) || value}
+                      >
+                        {designerDetail.steps.map((step) => (
+                          <MenuItem key={step.id} value={step.id}>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="body2">{getWorkflowStepLabel(step)}</Typography>
+                              <Typography variant="caption" color="text.secondary">{getWorkflowStepMeta(step)}</Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {transitionRuleForm.targetStepId ? (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+                          {getWorkflowStepMeta(designerStepById.get(String(transitionRuleForm.targetStepId)))}
+                        </Typography>
+                      ) : null}
+                    </FormControl>
+                    <TextField label="Priority" type="number" value={transitionRuleForm.priority} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, priority: event.target.value }))} />
+                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56 }}>Add rule</Button>
+                  </Box>
+                  <TextField label="Condition JSON" value={transitionRuleForm.conditionJson} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, conditionJson: event.target.value }))} multiline minRows={2} placeholder='{"fieldKey":"ProductGroup","operator":"equals","value":"A"}' />
+                  <Box sx={{ display: "grid", gap: 1 }}>
+                    {(designerDetail.transitionRules || []).map((rule) => {
+                      const fromStep = designerStepById.get(String(rule.fromStepId));
+                      const targetStep = designerStepById.get(String(rule.targetStepId));
+                      return (
+                        <Box key={rule.id} sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "1.4fr 110px 1.6fr 1.2fr auto" }, alignItems: "start", p: 1.25, borderRadius: 1, bgcolor: "background.default" }}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2">{getWorkflowStepLabel(fromStep) || rule.fromStepId}</Typography>
+                            <Typography variant="caption" color="text.secondary">{getWorkflowStepMeta(fromStep)}</Typography>
+                          </Box>
+                          <Chip label={rule.action} size="small" variant="outlined" sx={{ justifySelf: { md: "start" } }} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+                              <Chip label={rule.targetType} size="small" />
+                              <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>{getTransitionTargetLabel(rule, designerStepById)}</Typography>
+                            </Stack>
+                            {targetStep ? (
+                              <Typography variant="caption" color="text.secondary">{getWorkflowStepMeta(targetStep)}</Typography>
+                            ) : null}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{rule.conditionJson || (rule.isDefault ? "Default" : "No condition")}</Typography>
+                          <Tooltip title="Delete transition rule">
+                            <IconButton size="small" color="error" onClick={() => handleDeleteTransitionRule(rule)} disabled={configSubmitting} sx={{ justifySelf: { md: "end" } }}>
+                              <DeleteOutlineRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Stack>
+
+                <Divider />
+
+                <Stack spacing={2}>
+                  <Typography variant="h6">Versions & history</Typography>
+                  <TextField label="Version comment" value={versionComment} onChange={(event) => setVersionComment(event.target.value)} multiline minRows={2} />
+                  <Stack direction="row" spacing={1}>
+                    <Button variant="contained" onClick={handleSubmitVersion} disabled={configSubmitting}>Submit draft version</Button>
+                  </Stack>
+                  <WorkflowVersionTimeline
+                    versions={designerDetail.versions || []}
+                    activeVersionId={designerDetail.workflow?.currentApprovedVersionId}
+                    configSubmitting={configSubmitting}
+                    onAction={handleVersionAction}
+                  />
                 </Stack>
               </Stack>
             </SectionCard>
@@ -1518,6 +1971,12 @@ export function EWorkflowPage() {
               <TextField label="Mail" value={workflowForm.mail} onChange={(event) => setWorkflowForm((current) => ({ ...current, mail: event.target.value }))} fullWidth />
               <TextField label="Profile name" value={workflowForm.mailProfileName} onChange={(event) => setWorkflowForm((current) => ({ ...current, mailProfileName: event.target.value }))} fullWidth />
             </Box>
+            <FormControl fullWidth>
+              <InputLabel>Version mode</InputLabel>
+              <Select label="Version mode" value={workflowForm.versionMode} onChange={(event) => setWorkflowForm((current) => ({ ...current, versionMode: event.target.value }))}>
+                {versionModes.map((mode) => <MenuItem key={mode} value={mode}>{mode}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
               <FormControlLabel control={<Checkbox checked={workflowForm.isActive} onChange={(event) => setWorkflowForm((current) => ({ ...current, isActive: event.target.checked }))} />} label="Active" />
               <FormControlLabel control={<Checkbox checked={workflowForm.isPublic} onChange={(event) => setWorkflowForm((current) => ({ ...current, isPublic: event.target.checked }))} />} label="Public for requesters" />
@@ -1534,6 +1993,7 @@ export function EWorkflowPage() {
         open={stepDialog.open}
         mode={stepDialog.mode}
         form={stepForm}
+        groups={designerDetail?.groups || []}
         setForm={setStepForm}
         error={stepSubmitError}
         submitting={configSubmitting}

@@ -55,6 +55,11 @@ export function normalizeWorkflow(workflow) {
     description: workflow?.Description ?? workflow?.description ?? "",
     isActive: Boolean(workflow?.IsActive ?? workflow?.isActive),
     isPublic: Boolean(workflow?.IsPublic ?? workflow?.isPublic),
+    versionMode: workflow?.VersionMode ?? workflow?.versionMode ?? "SnapshotOnCreate",
+    currentApprovedVersionId: workflow?.CurrentApprovedVersionID ?? workflow?.currentApprovedVersionID ?? workflow?.currentApprovedVersionId ?? null,
+    currentApprovedVersionNo: workflow?.CurrentApprovedVersionNo ?? workflow?.currentApprovedVersionNo ?? null,
+    currentApprovedVersionStatus: workflow?.CurrentApprovedVersionStatus ?? workflow?.currentApprovedVersionStatus ?? "",
+    currentApprovedVersionApprovedAt: workflow?.CurrentApprovedVersionApprovedAt ?? workflow?.currentApprovedVersionApprovedAt ?? null,
     mail: workflow?.Mail ?? workflow?.mail ?? "",
     mailProfileName: workflow?.MailProfileName ?? workflow?.mailProfileName ?? "",
     createdBy: workflow?.CreatedBy ?? workflow?.createdBy ?? "",
@@ -77,6 +82,7 @@ export function normalizeOption(option) {
 }
 
 export function normalizeField(field) {
+  const template = field?.Template ?? field?.template ?? null;
   return {
     ...field,
     id: field?.ID ?? field?.id ?? null,
@@ -86,13 +92,22 @@ export function normalizeField(field) {
     dataType: field?.DataType ?? field?.dataType ?? "",
     isRequired: Boolean(field?.IsRequired ?? field?.isRequired),
     defaultValue: field?.DefaultValue ?? field?.defaultValue ?? "",
+    optionSourceType: field?.OptionSourceType ?? field?.optionSourceType ?? "Static",
     validationJson: field?.ValidationJson ?? field?.validationJson ?? "",
     displayOrder: Number(field?.DisplayOrder ?? field?.displayOrder ?? 0),
+    template: template ? {
+      fileName: template.FileName ?? template.fileName ?? "",
+      contentType: template.ContentType ?? template.contentType ?? "",
+      size: Number(template.Size ?? template.size ?? 0),
+      uploadedBy: template.UploadedBy ?? template.uploadedBy ?? "",
+      uploadedAt: template.UploadedAt ?? template.uploadedAt ?? null,
+    } : null,
     options: unwrapCollection(field?.Options ?? field?.options).map(normalizeOption),
   };
 }
 
 export function normalizeStep(step) {
+  const template = step?.Template ?? step?.template ?? null;
   return {
     ...step,
     id: step?.ID ?? step?.id ?? null,
@@ -107,6 +122,13 @@ export function normalizeStep(step) {
     isRequired: Boolean(step?.IsRequired ?? step?.isRequired ?? true),
     minApproveCount: step?.MinApproveCount ?? step?.minApproveCount ?? "",
     reminderHours: step?.ReminderHours ?? step?.reminderHours ?? "",
+    template: template ? {
+      fileName: template.FileName ?? template.fileName ?? "",
+      contentType: template.ContentType ?? template.contentType ?? "",
+      size: Number(template.Size ?? template.size ?? 0),
+      uploadedBy: template.UploadedBy ?? template.uploadedBy ?? "",
+      uploadedAt: template.UploadedAt ?? template.uploadedAt ?? null,
+    } : null,
     createdAt: step?.CreatedAt ?? step?.createdAt ?? null,
     fields: unwrapCollection(step?.Fields ?? step?.fields).map(normalizeField),
   };
@@ -124,6 +146,66 @@ export function normalizePermission(permission) {
   };
 }
 
+export function normalizeGroup(group) {
+  return {
+    ...group,
+    id: group?.ID ?? group?.id ?? null,
+    workflowId: group?.WorkflowID ?? group?.workflowID ?? group?.workflowId ?? null,
+    groupCode: group?.GroupCode ?? group?.groupCode ?? "",
+    groupName: group?.GroupName ?? group?.groupName ?? "",
+    description: group?.Description ?? group?.description ?? "",
+    isActive: Boolean(group?.IsActive ?? group?.isActive ?? true),
+    createdBy: group?.CreatedBy ?? group?.createdBy ?? "",
+    createdAt: group?.CreatedAt ?? group?.createdAt ?? null,
+    members: unwrapCollection(group?.Members ?? group?.members).map((member) => ({
+      id: member?.ID ?? member?.id ?? null,
+      groupId: member?.GroupID ?? member?.groupID ?? member?.groupId ?? null,
+      actor: member?.Actor ?? member?.actor ?? "",
+      isActive: Boolean(member?.IsActive ?? member?.isActive ?? true),
+      createdAt: member?.CreatedAt ?? member?.createdAt ?? null,
+    })),
+  };
+}
+
+export function normalizeVersion(version) {
+  return {
+    ...version,
+    id: version?.ID ?? version?.id ?? null,
+    workflowId: version?.WorkflowID ?? version?.workflowID ?? version?.workflowId ?? null,
+    versionNo: Number(version?.VersionNo ?? version?.versionNo ?? 0),
+    status: version?.Status ?? version?.status ?? "",
+    changeSummary: version?.ChangeSummary ?? version?.changeSummary ?? "",
+    createdBy: version?.CreatedBy ?? version?.createdBy ?? "",
+    createdAt: version?.CreatedAt ?? version?.createdAt ?? null,
+    modifiedBy: version?.ModifiedBy ?? version?.modifiedBy ?? "",
+    modifiedAt: version?.ModifiedAt ?? version?.modifiedAt ?? null,
+    submittedBy: version?.SubmittedBy ?? version?.submittedBy ?? "",
+    submittedAt: version?.SubmittedAt ?? version?.submittedAt ?? null,
+    approvedBy: version?.ApprovedBy ?? version?.approvedBy ?? "",
+    approvedAt: version?.ApprovedAt ?? version?.approvedAt ?? null,
+    rejectedBy: version?.RejectedBy ?? version?.rejectedBy ?? "",
+    rejectedAt: version?.RejectedAt ?? version?.rejectedAt ?? null,
+    comment: version?.Comment ?? version?.comment ?? "",
+  };
+}
+
+export function normalizeTransitionRule(rule) {
+  return {
+    ...rule,
+    id: rule?.ID ?? rule?.id ?? null,
+    workflowId: rule?.WorkflowID ?? rule?.workflowID ?? rule?.workflowId ?? null,
+    fromStepId: rule?.FromStepID ?? rule?.fromStepID ?? rule?.fromStepId ?? "",
+    action: rule?.Action ?? rule?.action ?? "Approve",
+    targetType: rule?.TargetType ?? rule?.targetType ?? "NextStep",
+    targetStepId: rule?.TargetStepID ?? rule?.targetStepID ?? rule?.targetStepId ?? "",
+    conditionJson: rule?.ConditionJson ?? rule?.conditionJson ?? "",
+    priority: Number(rule?.Priority ?? rule?.priority ?? 0),
+    isDefault: Boolean(rule?.IsDefault ?? rule?.isDefault),
+    isActive: Boolean(rule?.IsActive ?? rule?.isActive ?? true),
+    createdAt: rule?.CreatedAt ?? rule?.createdAt ?? null,
+  };
+}
+
 export function normalizeInstance(instance) {
   return {
     ...instance,
@@ -133,6 +215,11 @@ export function normalizeInstance(instance) {
     title: instance?.Title ?? instance?.title ?? "",
     status: instance?.Status ?? instance?.status ?? "",
     currentStepOrder: Number(instance?.CurrentStepOrder ?? instance?.currentStepOrder ?? 0),
+    createdWorkflowVersionId: instance?.CreatedWorkflowVersionID ?? instance?.createdWorkflowVersionID ?? instance?.createdWorkflowVersionId ?? null,
+    workflowVersionNo: instance?.WorkflowVersionNo ?? instance?.workflowVersionNo ?? null,
+    workflowVersionStatus: instance?.WorkflowVersionStatus ?? instance?.workflowVersionStatus ?? "",
+    workflowVersionApprovedAt: instance?.WorkflowVersionApprovedAt ?? instance?.workflowVersionApprovedAt ?? null,
+    effectiveVersionMode: instance?.EffectiveVersionMode ?? instance?.effectiveVersionMode ?? "SnapshotOnCreate",
     submittedBy: instance?.SubmittedBy ?? instance?.submittedBy ?? "",
     submittedAt: instance?.SubmittedAt ?? instance?.submittedAt ?? null,
     completedAt: instance?.CompletedAt ?? instance?.completedAt ?? null,
@@ -196,6 +283,28 @@ export function normalizeAudit(audit) {
   };
 }
 
+export function normalizeTableRow(row) {
+  return {
+    ...row,
+    id: row?.ID ?? row?.id ?? null,
+    instanceId: row?.InstanceID ?? row?.instanceID ?? row?.instanceId ?? null,
+    stepId: row?.StepID ?? row?.stepID ?? row?.stepId ?? null,
+    fieldId: row?.FieldID ?? row?.fieldID ?? row?.fieldId ?? null,
+    rowIndex: Number(row?.RowIndex ?? row?.rowIndex ?? 0),
+    cells: unwrapCollection(row?.Cells ?? row?.cells).map((cell) => ({
+      id: cell?.ID ?? cell?.id ?? null,
+      rowId: cell?.RowID ?? cell?.rowID ?? cell?.rowId ?? null,
+      columnKey: cell?.ColumnKey ?? cell?.columnKey ?? "",
+      valueText: cell?.ValueText ?? cell?.valueText ?? "",
+      valueNumber: cell?.ValueNumber ?? cell?.valueNumber ?? null,
+      valueDate: cell?.ValueDate ?? cell?.valueDate ?? null,
+      valueDateTime: cell?.ValueDateTime ?? cell?.valueDateTime ?? null,
+      valueBool: cell?.ValueBool ?? cell?.valueBool ?? null,
+      valueJson: cell?.ValueJson ?? cell?.valueJson ?? "",
+    })),
+  };
+}
+
 export function normalizeWorkflowDetail(data) {
   const entity = unwrapEntity(data);
 
@@ -203,6 +312,9 @@ export function normalizeWorkflowDetail(data) {
     workflow: normalizeWorkflow(entity.Workflow ?? entity.workflow),
     steps: unwrapCollection(entity.Steps ?? entity.steps).map(normalizeStep),
     permissions: unwrapCollection(entity.Permissions ?? entity.permissions).map(normalizePermission),
+    groups: unwrapCollection(entity.Groups ?? entity.groups).map(normalizeGroup),
+    versions: unwrapCollection(entity.Versions ?? entity.versions).map(normalizeVersion),
+    transitionRules: unwrapCollection(entity.TransitionRules ?? entity.transitionRules).map(normalizeTransitionRule),
     access: normalizeAccess(entity),
   };
 }
@@ -214,6 +326,7 @@ export function normalizeRequestDetail(data) {
     instance: normalizeInstance(entity.Instance ?? entity.instance),
     steps: unwrapCollection(entity.Steps ?? entity.steps).map(normalizeInstanceStep),
     values: unwrapCollection(entity.Values ?? entity.values).map(normalizeValue),
+    tableRows: unwrapCollection(entity.TableRows ?? entity.tableRows).map(normalizeTableRow),
     audit: unwrapCollection(entity.Audit ?? entity.audit).map(normalizeAudit),
     access: normalizeAccess(entity),
     canApprove: Boolean(entity.CanApprove ?? entity.canApprove),
@@ -227,6 +340,7 @@ function buildWorkflowPayload(payload, includeCode = false) {
     Description: payload.description?.trim() || "",
     IsActive: Boolean(payload.isActive),
     IsPublic: Boolean(payload.isPublic),
+    VersionMode: payload.versionMode || "SnapshotOnCreate",
     Mail: payload.mail?.trim() || null,
     MailProfileName: payload.mailProfileName?.trim() || null,
   };
@@ -260,6 +374,7 @@ function buildFieldPayload(payload) {
     DataType: String(payload.dataType || "").trim().toLowerCase(),
     IsRequired: Boolean(payload.isRequired),
     DefaultValue: payload.defaultValue?.trim() || null,
+    OptionSourceType: payload.optionSourceType || "Static",
     ValidationJson: payload.validationJson?.trim() || null,
     DisplayOrder: Number(payload.displayOrder),
     Options: payload.options?.map((option, index) => ({
@@ -294,6 +409,15 @@ function buildRequestValue(field, rawValue) {
       return { ...base, ValueJson: null };
     case "stored-procedure":
       return { ...base, ValueJson: rawValue ? JSON.stringify(rawValue) : null };
+    case "table":
+      return {
+        ...base,
+        ValueJson: JSON.stringify(rawValue || []),
+        TableRows: (rawValue || []).map((row, index) => ({
+          RowIndex: row.rowIndex || index + 1,
+          Cells: row.cells || row,
+        })),
+      };
     case "select":
     case "textarea":
     case "text":
@@ -386,6 +510,98 @@ export const workflowApi = {
     await apiClient.delete(`${workflowBasePath}/permissions/${encodeURIComponent(permissionId)}`);
   },
 
+  async createGroup(workflowId, payload) {
+    const { data } = await apiClient.post(`${workflowBasePath}/${encodeURIComponent(workflowId)}/groups`, {
+      GroupCode: payload.groupCode.trim(),
+      GroupName: payload.groupName.trim(),
+      Description: payload.description?.trim() || "",
+      IsActive: Boolean(payload.isActive),
+      Members: String(payload.members || "")
+        .split(/[;,\n\r]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    });
+    return normalizeGroup(unwrapEntity(data));
+  },
+
+  async updateGroup(groupId, payload) {
+    const { data } = await apiClient.put(`${workflowBasePath}/groups/${encodeURIComponent(groupId)}`, {
+      GroupCode: payload.groupCode.trim(),
+      GroupName: payload.groupName.trim(),
+      Description: payload.description?.trim() || "",
+      IsActive: Boolean(payload.isActive),
+      Members: String(payload.members || "")
+        .split(/[;,\n\r]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    });
+    return normalizeGroup(unwrapEntity(data));
+  },
+
+  async deleteGroup(groupId) {
+    await apiClient.delete(`${workflowBasePath}/groups/${encodeURIComponent(groupId)}`);
+  },
+
+  async createTransitionRule(workflowId, payload) {
+    const { data } = await apiClient.post(`${workflowBasePath}/${encodeURIComponent(workflowId)}/transition-rules`, {
+      FromStepID: Number(payload.fromStepId),
+      Action: payload.action,
+      TargetType: payload.targetType,
+      TargetStepID: payload.targetStepId ? Number(payload.targetStepId) : null,
+      ConditionJson: payload.conditionJson?.trim() || null,
+      Priority: Number(payload.priority || 0),
+      IsDefault: Boolean(payload.isDefault),
+      IsActive: Boolean(payload.isActive),
+    });
+    return normalizeTransitionRule(unwrapEntity(data));
+  },
+
+  async updateTransitionRule(ruleId, payload) {
+    const { data } = await apiClient.put(`${workflowBasePath}/transition-rules/${encodeURIComponent(ruleId)}`, {
+      FromStepID: Number(payload.fromStepId),
+      Action: payload.action,
+      TargetType: payload.targetType,
+      TargetStepID: payload.targetStepId ? Number(payload.targetStepId) : null,
+      ConditionJson: payload.conditionJson?.trim() || null,
+      Priority: Number(payload.priority || 0),
+      IsDefault: Boolean(payload.isDefault),
+      IsActive: Boolean(payload.isActive),
+    });
+    return normalizeTransitionRule(unwrapEntity(data));
+  },
+
+  async deleteTransitionRule(ruleId) {
+    await apiClient.delete(`${workflowBasePath}/transition-rules/${encodeURIComponent(ruleId)}`);
+  },
+
+  async submitVersion(workflowId, comment = "") {
+    const { data } = await apiClient.post(`${workflowBasePath}/${encodeURIComponent(workflowId)}/versions/submit`, {
+      Comment: comment.trim(),
+    });
+    return normalizeVersion(unwrapEntity(data));
+  },
+
+  async approveVersion(versionId, comment = "") {
+    const { data } = await apiClient.post(`${workflowBasePath}/versions/${encodeURIComponent(versionId)}/approve`, {
+      Comment: comment.trim(),
+    });
+    return normalizeVersion(unwrapEntity(data));
+  },
+
+  async rejectVersion(versionId, comment = "") {
+    const { data } = await apiClient.post(`${workflowBasePath}/versions/${encodeURIComponent(versionId)}/reject`, {
+      Comment: comment.trim(),
+    });
+    return normalizeVersion(unwrapEntity(data));
+  },
+
+  async resolveFieldOptions(fieldId, values = [], fields = []) {
+    const { data } = await apiClient.post(`${workflowBasePath}/fields/${encodeURIComponent(fieldId)}/options/resolve`, {
+      Values: fields.map((field) => buildRequestValue(field, values[field.id])),
+    });
+    return unwrapCollection(data).map(normalizeOption);
+  },
+
   async createRequest(payload) {
     const { data } = await apiClient.post(requestBasePath, {
       WorkflowID: payload.workflowId,
@@ -410,6 +626,60 @@ export const workflowApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return unwrapEntity(data);
+  },
+
+  async uploadStepTemplate(stepId, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post(`${workflowBasePath}/steps/${encodeURIComponent(stepId)}/template`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return normalizeStep(unwrapEntity(data));
+  },
+
+  async uploadFieldTemplate(fieldId, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post(`${workflowBasePath}/fields/${encodeURIComponent(fieldId)}/template`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return normalizeField(unwrapEntity(data));
+  },
+
+  async downloadFieldTemplate(fieldId) {
+    const { data, headers } = await apiClient.get(`${workflowBasePath}/fields/${encodeURIComponent(fieldId)}/template`, {
+      responseType: "blob",
+    });
+    return {
+      blob: data,
+      contentType: headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
+  },
+
+  async downloadStepTemplate(stepId) {
+    const { data, headers } = await apiClient.get(`${workflowBasePath}/steps/${encodeURIComponent(stepId)}/template`, {
+      responseType: "blob",
+    });
+    return {
+      blob: data,
+      contentType: headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
+  },
+
+  async importTableFieldExcel(fieldId, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post(`${workflowBasePath}/fields/${encodeURIComponent(fieldId)}/table/import`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    const entity = unwrapEntity(data);
+    return {
+      rows: unwrapCollection(entity.Rows ?? entity.rows).map((row, index) => ({
+        rowIndex: Number(row?.RowIndex ?? row?.rowIndex ?? index + 1),
+        cells: row?.Cells ?? row?.cells ?? {},
+      })),
+      count: Number(entity.Count ?? entity.count ?? 0),
+    };
   },
 
   async downloadFile(fileId) {
