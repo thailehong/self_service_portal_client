@@ -330,9 +330,8 @@
                         "uploadQueue":  "Upload queue",
                         "recentLibrary":  "Recent library",
                         "accessAnalytics":  "Access analytics",
-                        "serviceRequests":  "Service requests",
                         "securityPosture":  "Security posture",
-                        "helpCenter":  "Help center"
+                        "helpCenter":  "Report an issue"
                     },
     "sectionPage":  {
                         "queueTitle":  "Current queue",

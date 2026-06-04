@@ -3,7 +3,9 @@ import { Box, Drawer, useMediaQuery, useTheme } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { selectAuth } from '../../features/auth/authSlice';
 import { selectSettings, toggleSidebarCollapsed } from '../../features/settings/settingsSlice';
+import { usePortalPresence } from '../../hooks/usePortalPresence';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { PageContainer } from './PageContainer';
@@ -19,8 +21,10 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settings = useAppSelector(selectSettings);
+  const auth = useAppSelector(selectAuth);
   const dispatch = useAppDispatch();
   const drawerWidth = settings.sidebarCollapsed ? collapsedWidth : expandedWidth;
+  usePortalPresence(auth.isAuthenticated);
 
   const drawerContent = <Sidebar collapsed={isDesktop ? settings.sidebarCollapsed : false} />;
 

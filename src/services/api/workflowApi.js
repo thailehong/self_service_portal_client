@@ -346,11 +346,16 @@ function buildWorkflowPayload(payload, includeCode = false) {
   };
 }
 
+function buildGeneratedStepCode(payload) {
+  const order = Number(payload.stepOrder) || 1;
+  return `STEP-${String(order).padStart(3, "0")}`;
+}
+
 function buildStepPayload(payload) {
   return {
     StepOrder: Number(payload.stepOrder),
-    StepGroup: payload.stepGroup === "" || payload.stepGroup === null ? null : Number(payload.stepGroup),
-    StepCode: payload.stepCode.trim(),
+    StepGroup: null,
+    StepCode: payload.stepCode?.trim() || buildGeneratedStepCode(payload),
     StepName: payload.stepName.trim(),
     ApprovalMode: payload.approvalMode,
     ApproverType: payload.approverType,
@@ -648,6 +653,16 @@ export const workflowApi = {
 
   async downloadFieldTemplate(fieldId) {
     const { data, headers } = await apiClient.get(`${workflowBasePath}/fields/${encodeURIComponent(fieldId)}/template`, {
+      responseType: "blob",
+    });
+    return {
+      blob: data,
+      contentType: headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
+  },
+
+  async downloadTableFieldTemplate(fieldId) {
+    const { data, headers } = await apiClient.get(`${workflowBasePath}/fields/${encodeURIComponent(fieldId)}/table/template`, {
       responseType: "blob",
     });
     return {

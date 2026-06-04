@@ -383,8 +383,8 @@ export function getStoredProcedureConfig(field) {
 }
 
 export function validateStepForm(form) {
-  if (!form.stepCode.trim() || !form.stepName.trim() || !form.approverValue.trim()) {
-    return "Step code, step name, and approver value are required.";
+  if (!form.stepName.trim() || !form.approverValue.trim()) {
+    return "Step name and approver value are required.";
   }
 
   if (form.approvalMode === "ParallelAny" && (!form.minApproveCount || Number(form.minApproveCount) <= 0)) {

@@ -94,7 +94,8 @@ const conditionalValidationTemplate = JSON.stringify({
 }, null, 2);
 
 const tableValidationTemplate = JSON.stringify({
-  mode: "manual",
+  allowManualInput: true,
+  allowExcelImport: true,
   columns: [
     { key: "EmpID", label: "Employee ID", dataType: "text", required: true, maxLength: 20 },
     { key: "DateOfBirth", label: "Date of birth", dataType: "date", required: false },
@@ -150,7 +151,7 @@ export const StepFormDialog = memo(function StepFormDialog({
       <DialogContent>
         <Stack spacing={2.25} sx={{ pt: 1 }}>
           {error ? <Alert severity="error" variant="outlined">{error}</Alert> : null}
-          <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" } }}>
+          <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "minmax(180px, 240px)" } }}>
             <TextField
               label="Order"
               type="number"
@@ -159,8 +160,6 @@ export const StepFormDialog = memo(function StepFormDialog({
               disabled
               required
             />
-            <TextField label="Group" type="number" value={localForm.stepGroup} onChange={(event) => setLocalForm((current) => ({ ...current, stepGroup: event.target.value }))} />
-            <TextField label="Step code" value={localForm.stepCode} onChange={(event) => setLocalForm((current) => ({ ...current, stepCode: event.target.value }))} required />
           </Box>
           <TextField label="Step name" value={localForm.stepName} onChange={(event) => setLocalForm((current) => ({ ...current, stepName: event.target.value }))} required fullWidth />
           <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" } }}>

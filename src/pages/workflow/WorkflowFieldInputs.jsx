@@ -2,6 +2,7 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import { Alert, Autocomplete, Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useEffect, useState } from "react";
@@ -10,29 +11,34 @@ import { workflowApi } from "../../services/api/workflowApi";
 import { getErrorMessage, getStoredProcedureConfig } from "./workflowUtils";
 
 export function getTableColumns(field) {
+  const config = getTableConfig(field);
+  const columns = Array.isArray(config)
+    ? config
+    : config.columns || config.Columns || config.tableColumns || config.TableColumns || config.schema?.columns || config.Schema?.Columns || [];
+
+  return Array.isArray(columns)
+    ? columns.map((column) => ({
+      ...column,
+      key: column.key ?? column.Key ?? column.columnKey ?? column.ColumnKey ?? "",
+      label: column.label ?? column.Label ?? column.name ?? column.Name ?? column.key ?? column.Key ?? "",
+      dataType: String(column.dataType ?? column.DataType ?? "text").toLowerCase(),
+      required: Boolean(column.required ?? column.Required),
+      maxLength: column.maxLength ?? column.MaxLength ?? null,
+      options: column.options ?? column.Options ?? [],
+    })).filter((column) => column.key)
+    : [];
+}
+
+function getTableConfig(field) {
   try {
     let config = JSON.parse(field?.validationJson ?? field?.ValidationJson ?? "{}");
     if (typeof config === "string") {
       config = JSON.parse(config);
     }
 
-    const columns = Array.isArray(config)
-      ? config
-      : config.columns || config.Columns || config.tableColumns || config.TableColumns || config.schema?.columns || config.Schema?.Columns || [];
-
-    return Array.isArray(columns)
-      ? columns.map((column) => ({
-        ...column,
-        key: column.key ?? column.Key ?? column.columnKey ?? column.ColumnKey ?? "",
-        label: column.label ?? column.Label ?? column.name ?? column.Name ?? column.key ?? column.Key ?? "",
-        dataType: String(column.dataType ?? column.DataType ?? "text").toLowerCase(),
-        required: Boolean(column.required ?? column.Required),
-        maxLength: column.maxLength ?? column.MaxLength ?? null,
-        options: column.options ?? column.Options ?? [],
-      })).filter((column) => column.key)
-      : [];
+    return config || {};
   } catch {
-    return [];
+    return {};
   }
 }
 
@@ -206,9 +212,14 @@ export function StoredProcedureField({ field, value, onChange }) {
 }
 
 export function WorkflowTableField({ field, value, onChange }) {
+  const config = getTableConfig(field);
   const columns = getTableColumns(field);
+  const allowManualInput = config.allowManualInput ?? config.AllowManualInput ?? true;
+  const allowExcelImport = Boolean(config.allowExcelImport ?? config.AllowExcelImport);
   const rows = Array.isArray(value) ? value : [];
   const visibleRows = rows.length || !columns.length ? rows : [buildEmptyTableRow(columns, 1)];
+  const [excelBusy, setExcelBusy] = useState(false);
+  const [excelError, setExcelError] = useState("");
 
   useEffect(() => {
     if (columns.length && Array.isArray(value) && value.length === 0) {
@@ -228,15 +239,87 @@ export function WorkflowTableField({ field, value, onChange }) {
     onChange([...visibleRows, buildEmptyTableRow(columns, visibleRows.length + 1)]);
   };
 
+  const downloadTableTemplate = async () => {
+    if (!field.id) {
+      return;
+    }
+
+    setExcelError("");
+    setExcelBusy(true);
+    try {
+      const result = await workflowApi.downloadTableFieldTemplate(field.id);
+      const url = URL.createObjectURL(result.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${field.fieldKey || "table"}_template.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExcelError(getErrorMessage(error, "Could not download table template."));
+    } finally {
+      setExcelBusy(false);
+    }
+  };
+
+  const importTableExcel = async (file) => {
+    if (!field.id || !file) {
+      return;
+    }
+
+    setExcelError("");
+    setExcelBusy(true);
+    try {
+      const result = await workflowApi.importTableFieldExcel(field.id, file);
+      onChange(result.rows || []);
+    } catch (error) {
+      setExcelError(getErrorMessage(error, "Could not import Excel file."));
+    } finally {
+      setExcelBusy(false);
+    }
+  };
+
   return (
     <Stack spacing={1.25}>
       <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
-        <Typography variant="body2">{field.label}{field.isRequired ? " *" : ""}</Typography>
+        <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>{field.label}{field.isRequired ? " *" : ""}</Typography>
+        {allowExcelImport ? (
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<DownloadRoundedIcon />}
+              onClick={downloadTableTemplate}
+              disabled={excelBusy || !columns.length}
+            >
+              Template
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              component="label"
+              startIcon={<UploadFileRoundedIcon />}
+              disabled={excelBusy || !columns.length}
+            >
+              Import Excel
+              <Box
+                component="input"
+                type="file"
+                accept=".xlsx"
+                sx={{ display: "none" }}
+                onChange={(event) => {
+                  void importTableExcel(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+            </Button>
+          </Stack>
+        ) : null}
       </Stack>
+      {excelError ? <Alert severity="error" variant="outlined">{excelError}</Alert> : null}
       {!columns.length ? (
         <Alert severity="warning" variant="outlined">Table field requires columns in Validation JSON.</Alert>
       ) : null}
-      {columns.length ? (
+      {columns.length && allowManualInput ? (
         <Box sx={{ width: "100%", overflowX: "auto", border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
           <Box
             sx={{
@@ -357,6 +440,9 @@ export function WorkflowTableField({ field, value, onChange }) {
             ))}
           </Box>
         </Box>
+      ) : null}
+      {columns.length && !allowManualInput ? (
+        <Alert severity="info" variant="outlined">Download the template and import Excel to fill this table.</Alert>
       ) : null}
     </Stack>
   );

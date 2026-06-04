@@ -62,15 +62,6 @@ export const sidebarNavigation = [
           accentColor: "secondary.main",
         },
       },
-      {
-        id: "help-service-requests",
-        labelKey: "navChildren.serviceRequests",
-        to: "/dashboard/help/service-requests",
-        meta: {
-          metricValues: ["9", "3", "4h"],
-          accentColor: "error.main",
-        },
-      },
     ],
   },
 ];

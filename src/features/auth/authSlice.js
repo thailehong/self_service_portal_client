@@ -82,12 +82,7 @@ export const refreshSession = createAsyncThunk('auth/refreshSession', async (_, 
   try {
     const refreshResponse = await authApi.refresh();
     tokenManager.setAccessToken(refreshResponse.accessToken);
-    const currentUser = await authApi.currentUser();
-
-    return {
-      ...refreshResponse,
-      user: currentUser,
-    };
+    return refreshResponse;
   } catch (error) {
     tokenManager.clearAccessToken();
     return thunkApi.rejectWithValue(getErrorMessage(error, 'Session could not be refreshed.'));
@@ -98,12 +93,7 @@ export const initializeAuth = createAsyncThunk('auth/initialize', async (_, thun
   try {
     const refreshResponse = await authApi.refresh();
     tokenManager.setAccessToken(refreshResponse.accessToken);
-    const currentUser = await authApi.currentUser();
-
-    return {
-      ...refreshResponse,
-      user: currentUser,
-    };
+    return refreshResponse;
   } catch (error) {
     tokenManager.clearAccessToken();
     return thunkApi.rejectWithValue(getErrorMessage(error, 'No existing session found.'));

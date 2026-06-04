@@ -5,7 +5,7 @@ export const APP_VERSION = packageJson.version;
 
 export const APP_VERSION_HISTORY = [
   {
-    version: APP_VERSION,
+    version: "1.0.0",
     releaseDate: "May 21, 2026",
     summary:
       "Expanded the workspace with HR & Admin services, version history, and a cleaner app-wide footer/sidebar information model.",
@@ -20,7 +20,7 @@ export const APP_VERSION_HISTORY = [
         title: "Dashboard",
         description:
           "Added a Dashboard page to provide employees with an overview of their tasks, notifications, and important updates.",
-        tags: ["Routing", "Detail pages", "Scalable structure"],
+        tags: ["Dashboard", "Notifications", "Department Updates"],
       },
       {
         title: "HR & Admin",
@@ -31,8 +31,34 @@ export const APP_VERSION_HISTORY = [
       {
         title: "Administration",
         description:
-          "Added an Administration page for managing employee information, including personal details, job information, and access permissions.",
-        tags: ["Routing", "Detail pages", "Scalable structure"],
+          "Add functionality to create and assign permissions for users accessing the portal.",
+        tags: ["Administration", "Access Control"],
+      },
+    ],
+  },
+  {
+    version: APP_VERSION,
+    releaseDate: "Jun 4, 2026",
+    summary:
+      "Introduced eWorkflow functionality, allowing users to design workflows, step approvals, and custom fields for all types of workflows.",
+    items: [
+      {
+        title: "eWorkflow",
+        description:
+          "Release eWorkflow module, allowing user design workflow, step approval, custom fields for all types of workflows",
+        tags: ["eWorkflow", "Self-service"],
+      },
+      {
+        title: "Administration",
+        description:
+          "Added function Monitoring - to monitor users and APIs, track slow APIs, and monitor the number of concurrent users, or by day/month/year.",
+        tags: ["Administration", "Self-service", "Monitoring"],
+      },
+      {
+        title: "Help Center",
+        description:
+          "Added function Report an issue - allowing users to report app issues and track their status from opening to closing.",
+        tags: ["Help Center", "Self-service", "Report an issue"],
       },
     ],
   },

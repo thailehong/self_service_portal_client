@@ -1,232 +1,232 @@
-{
+﻿{
   "common": {
-    "appName": "Cổng thông tin nhân viên",
-    "search": "Tìm kiếm",
-    "comingSoon": "Sắp ra mắt",
-    "notAvailable": "Chưa có dữ liệu",
-    "employeeId": "Mã nhân viên",
-    "username": "Tên đăng nhập",
-    "password": "Mật khẩu",
-    "confirmPassword": "Xác nhận mật khẩu",
-    "firstName": "Tên",
-    "lastName": "Họ",
+    "appName": "Cá»•ng thÃ´ng tin nhÃ¢n viÃªn",
+    "search": "TÃ¬m kiáº¿m",
+    "comingSoon": "Sáº¯p ra máº¯t",
+    "notAvailable": "ChÆ°a cÃ³ dá»¯ liá»‡u",
+    "employeeId": "MÃ£ nhÃ¢n viÃªn",
+    "username": "TÃªn Ä‘Äƒng nháº­p",
+    "password": "Máº­t kháº©u",
+    "confirmPassword": "XÃ¡c nháº­n máº­t kháº©u",
+    "firstName": "TÃªn",
+    "lastName": "Há»",
     "email": "Email",
-    "department": "Phòng ban",
-    "status": "Trạng thái",
-    "actions": "Thao tác",
-    "optional": "Tùy chọn",
-    "startDate": "Ngày bắt đầu dự kiến"
+    "department": "PhÃ²ng ban",
+    "status": "Tráº¡ng thÃ¡i",
+    "actions": "Thao tÃ¡c",
+    "optional": "TÃ¹y chá»n",
+    "startDate": "NgÃ y báº¯t Ä‘áº§u dá»± kiáº¿n"
   },
   "actions": {
-    "signIn": "Đăng nhập",
-    "signOut": "Đăng xuất",
-    "register": "Đăng ký",
-    "goHome": "Về trang chủ",
-    "goDashboard": "Mở bảng điều khiển",
-    "retry": "Thử lại",
-    "cancel": "Hủy",
-    "confirm": "Xác nhận",
-    "save": "Lưu thay đổi",
-    "apply": "Áp dụng",
-    "browse": "Chọn tệp",
-    "upload": "Tải tệp lên",
-    "remove": "Xóa",
-    "clear": "Xóa hết",
-    "viewAll": "Xem tất cả",
-    "learnMore": "Tìm hiểu thêm"
+    "signIn": "ÄÄƒng nháº­p",
+    "signOut": "ÄÄƒng xuáº¥t",
+    "register": "ÄÄƒng kÃ½",
+    "goHome": "Vá» trang chá»§",
+    "goDashboard": "Má»Ÿ báº£ng Ä‘iá»u khiá»ƒn",
+    "retry": "Thá»­ láº¡i",
+    "cancel": "Há»§y",
+    "confirm": "XÃ¡c nháº­n",
+    "save": "LÆ°u thay Ä‘á»•i",
+    "apply": "Ãp dá»¥ng",
+    "browse": "Chá»n tá»‡p",
+    "upload": "Táº£i tá»‡p lÃªn",
+    "remove": "XÃ³a",
+    "clear": "XÃ³a háº¿t",
+    "viewAll": "Xem táº¥t cáº£",
+    "learnMore": "TÃ¬m hiá»ƒu thÃªm"
   },
   "nav": {
-    "home": "Trang chủ",
-    "dashboard": "Bảng điều khiển",
+    "home": "Trang chá»§",
+    "dashboard": "Báº£ng Ä‘iá»u khiá»ƒn",
     "hr_admin": "HR & Admin",
-    "help": "Trung tâm trợ giúp"
+    "help": "Trung tÃ¢m trá»£ giÃºp"
   },
   "settings": {
-    "title": "Tùy chọn",
-    "appearance": "Giao diện",
-    "themeMode": "Chế độ màu",
-    "light": "Sáng",
-    "dark": "Tối",
-    "primaryColor": "Màu chủ đạo",
-    "language": "Ngôn ngữ",
-    "sidebar": "Thanh bên",
-    "sidebarDescription": "Quản lý cá nhân hóa, ngôn ngữ và tùy chọn hiển thị tại một nơi.",
-    "appearanceDescription": "Chuyển đổi giữa giao diện sáng và tối cho không gian làm việc.",
-    "primaryColorDescription": "Chọn màu nhấn được dùng cho nút, điểm nhấn và liên kết.",
-    "languageDescription": "Chọn ngôn ngữ giao diện cho toàn bộ ứng dụng."
+    "title": "TÃ¹y chá»n",
+    "appearance": "Giao diá»‡n",
+    "themeMode": "Cháº¿ Ä‘á»™ mÃ u",
+    "light": "SÃ¡ng",
+    "dark": "Tá»‘i",
+    "primaryColor": "MÃ u chá»§ Ä‘áº¡o",
+    "language": "NgÃ´n ngá»¯",
+    "sidebar": "Thanh bÃªn",
+    "sidebarDescription": "Quáº£n lÃ½ cÃ¡ nhÃ¢n hÃ³a, ngÃ´n ngá»¯ vÃ  tÃ¹y chá»n hiá»ƒn thá»‹ táº¡i má»™t nÆ¡i.",
+    "appearanceDescription": "Chuyá»ƒn Ä‘á»•i giá»¯a giao diá»‡n sÃ¡ng vÃ  tá»‘i cho khÃ´ng gian lÃ m viá»‡c.",
+    "primaryColorDescription": "Chá»n mÃ u nháº¥n Ä‘Æ°á»£c dÃ¹ng cho nÃºt, Ä‘iá»ƒm nháº¥n vÃ  liÃªn káº¿t.",
+    "languageDescription": "Chá»n ngÃ´n ngá»¯ giao diá»‡n cho toÃ n bá»™ á»©ng dá»¥ng."
   },
   "languages": {
-    "en": "Tiếng Anh",
-    "vi": "Tiếng Việt"
+    "en": "Tiáº¿ng Anh",
+    "vi": "Tiáº¿ng Viá»‡t"
   },
   "states": {
-    "loading": "Đang tải",
-    "restoringSession": "Đang khôi phục phiên làm việc an toàn...",
-    "emptyTitle": "Chưa có nội dung",
-    "emptyDescription": "Khi có dữ liệu, nội dung sẽ xuất hiện tại đây.",
-    "notFoundTitle": "Không tìm thấy trang",
-    "notFoundDescription": "Trang bạn yêu cầu không tồn tại hoặc đã bị di chuyển.",
-    "unauthorizedTitle": "Không có quyền truy cập",
-    "unauthorizedDescription": "Tài khoản của bạn không có quyền vào khu vực này.",
-    "tableEmptyTitle": "Không có bản ghi phù hợp",
-    "tableEmptyDescription": "Hãy thử từ khóa khác hoặc điều chỉnh bộ lọc."
+    "loading": "Äang táº£i",
+    "restoringSession": "Äang khÃ´i phá»¥c phiÃªn lÃ m viá»‡c an toÃ n...",
+    "emptyTitle": "ChÆ°a cÃ³ ná»™i dung",
+    "emptyDescription": "Khi cÃ³ dá»¯ liá»‡u, ná»™i dung sáº½ xuáº¥t hiá»‡n táº¡i Ä‘Ã¢y.",
+    "notFoundTitle": "KhÃ´ng tÃ¬m tháº¥y trang",
+    "notFoundDescription": "Trang báº¡n yÃªu cáº§u khÃ´ng tá»“n táº¡i hoáº·c Ä‘Ã£ bá»‹ di chuyá»ƒn.",
+    "unauthorizedTitle": "KhÃ´ng cÃ³ quyá»n truy cáº­p",
+    "unauthorizedDescription": "TÃ i khoáº£n cá»§a báº¡n khÃ´ng cÃ³ quyá»n vÃ o khu vá»±c nÃ y.",
+    "tableEmptyTitle": "KhÃ´ng cÃ³ báº£n ghi phÃ¹ há»£p",
+    "tableEmptyDescription": "HÃ£y thá»­ tá»« khÃ³a khÃ¡c hoáº·c Ä‘iá»u chá»‰nh bá»™ lá»c."
   },
   "auth": {
-    "tagline": "Truy cập nội bộ với trải nghiệm cấp doanh nghiệp",
-    "loginTitle": "Chào mừng quay lại",
-    "loginHeading": "Truy cập cổng thông tin nhân viên với bảo mật cấp doanh nghiệp.",
-    "loginDescription": "Xác thực bằng tài khoản Active Directory hoặc tài khoản cục bộ đã đăng ký. Phiên làm việc được khôi phục an toàn bằng refresh token xoay vòng.",
-    "registerTitle": "Tạo quyền truy cập cổng thông tin",
-    "registerHeading": "Đăng ký tài khoản cục bộ bằng thông tin nhân viên của bạn.",
-    "registerDescription": "Chỉ nhân viên không có tài khoản Active Directory mới có thể tạo đăng nhập cục bộ. Mật khẩu được băm ở backend và không bao giờ lưu ở dạng thô.",
-    "brandTitle": "Không gian làm việc cổng nhân viên",
-    "brandDescription": "Cổng nội bộ thống nhất cho truy cập, vận hành và năng suất nhân viên.",
+    "tagline": "Truy cáº­p ná»™i bá»™ vá»›i tráº£i nghiá»‡m cáº¥p doanh nghiá»‡p",
+    "loginTitle": "ChÃ o má»«ng quay láº¡i",
+    "loginHeading": "Truy cáº­p cá»•ng thÃ´ng tin nhÃ¢n viÃªn vá»›i báº£o máº­t cáº¥p doanh nghiá»‡p.",
+    "loginDescription": "XÃ¡c thá»±c báº±ng tÃ i khoáº£n Active Directory hoáº·c tÃ i khoáº£n cá»¥c bá»™ Ä‘Ã£ Ä‘Äƒng kÃ½. PhiÃªn lÃ m viá»‡c Ä‘Æ°á»£c khÃ´i phá»¥c an toÃ n báº±ng refresh token xoay vÃ²ng.",
+    "registerTitle": "Táº¡o quyá»n truy cáº­p cá»•ng thÃ´ng tin",
+    "registerHeading": "ÄÄƒng kÃ½ tÃ i khoáº£n cá»¥c bá»™ báº±ng thÃ´ng tin nhÃ¢n viÃªn cá»§a báº¡n.",
+    "registerDescription": "Chá»‰ nhÃ¢n viÃªn khÃ´ng cÃ³ tÃ i khoáº£n Active Directory má»›i cÃ³ thá»ƒ táº¡o Ä‘Äƒng nháº­p cá»¥c bá»™. Máº­t kháº©u Ä‘Æ°á»£c bÄƒm á»Ÿ backend vÃ  khÃ´ng bao giá» lÆ°u á»Ÿ dáº¡ng thÃ´.",
+    "brandTitle": "KhÃ´ng gian lÃ m viá»‡c cá»•ng nhÃ¢n viÃªn",
+    "brandDescription": "Cá»•ng ná»™i bá»™ thá»‘ng nháº¥t cho truy cáº­p, váº­n hÃ nh vÃ  nÄƒng suáº¥t nhÃ¢n viÃªn.",
     "brandBullets": [
-      "Access token ngắn hạn và refresh token HttpOnly",
-      "Bảo vệ tuyến đường hiện đại và khôi phục phiên mượt mà",
-      "Hệ thống thiết kế dùng chung để bảo trì"
+      "Access token ngáº¯n háº¡n vÃ  refresh token HttpOnly",
+      "Báº£o vá»‡ tuyáº¿n Ä‘Æ°á»ng hiá»‡n Ä‘áº¡i vÃ  khÃ´i phá»¥c phiÃªn mÆ°á»£t mÃ ",
+      "Há»‡ thá»‘ng thiáº¿t káº¿ dÃ¹ng chung Ä‘á»ƒ báº£o trÃ¬"
     ],
-    "loginMode": "Chế độ đăng nhập",
-    "loginModeAd": "Đăng nhập Active Directory",
-    "loginModeLocal": "Đăng nhập cổng cục bộ",
-    "noAccount": "Không có tài khoản AD?",
-    "alreadyRegistered": "Đã đăng ký?",
-    "registerCta": "Đăng ký bằng mã nhân viên",
-    "signInCta": "Đi đến đăng nhập",
-    "helperPassword": "Sử dụng ít nhất 8 ký tự.",
-    "helperPasswordValid": "Độ dài mật khẩu hợp lệ.",
-    "validationRequired": "Vui lòng nhập đầy đủ các trường bắt buộc.",
-    "validationPasswordLength": "Mật khẩu phải có ít nhất 8 ký tự.",
-    "validationPasswordMismatch": "Mật khẩu và xác nhận mật khẩu phải khớp nhau.",
-    "submittingLogin": "Đang đăng nhập...",
-    "submittingRegister": "Đang tạo tài khoản...",
+    "loginMode": "Cháº¿ Ä‘á»™ Ä‘Äƒng nháº­p",
+    "loginModeAd": "ÄÄƒng nháº­p Active Directory",
+    "loginModeLocal": "ÄÄƒng nháº­p cá»•ng cá»¥c bá»™",
+    "noAccount": "KhÃ´ng cÃ³ tÃ i khoáº£n AD?",
+    "alreadyRegistered": "ÄÃ£ Ä‘Äƒng kÃ½?",
+    "registerCta": "ÄÄƒng kÃ½ báº±ng mÃ£ nhÃ¢n viÃªn",
+    "signInCta": "Äi Ä‘áº¿n Ä‘Äƒng nháº­p",
+    "helperPassword": "Sá»­ dá»¥ng Ã­t nháº¥t 8 kÃ½ tá»±.",
+    "helperPasswordValid": "Äá»™ dÃ i máº­t kháº©u há»£p lá»‡.",
+    "validationRequired": "Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ cÃ¡c trÆ°á»ng báº¯t buá»™c.",
+    "validationPasswordLength": "Máº­t kháº©u pháº£i cÃ³ Ã­t nháº¥t 8 kÃ½ tá»±.",
+    "validationPasswordMismatch": "Máº­t kháº©u vÃ  xÃ¡c nháº­n máº­t kháº©u pháº£i khá»›p nhau.",
+    "submittingLogin": "Äang Ä‘Äƒng nháº­p...",
+    "submittingRegister": "Äang táº¡o tÃ i khoáº£n...",
     "formSections": {
-      "identity": "Thông tin định danh",
-      "credentials": "Thông tin đăng nhập"
+      "identity": "ThÃ´ng tin Ä‘á»‹nh danh",
+      "credentials": "ThÃ´ng tin Ä‘Äƒng nháº­p"
     }
   },
   "home": {
-    "eyebrow": "Truy cập nhân viên cấp doanh nghiệp",
-    "headline": "Cổng nội bộ hiện đại cho truy cập an toàn và theo dõi vận hành.",
-    "description": "Frontend hiện hoạt động như một ứng dụng nội bộ có thể triển khai với hệ thống giao diện bền vững, đa ngôn ngữ, thành phần tái sử dụng và dashboard mở rộng tốt.",
-    "primaryCta": "Vào không gian làm việc",
-    "secondaryCta": "Đăng ký tài khoản",
+    "eyebrow": "Truy cáº­p nhÃ¢n viÃªn cáº¥p doanh nghiá»‡p",
+    "headline": "Cá»•ng ná»™i bá»™ hiá»‡n Ä‘áº¡i cho truy cáº­p an toÃ n vÃ  theo dÃµi váº­n hÃ nh.",
+    "description": "Frontend hiá»‡n hoáº¡t Ä‘á»™ng nhÆ° má»™t á»©ng dá»¥ng ná»™i bá»™ cÃ³ thá»ƒ triá»ƒn khai vá»›i há»‡ thá»‘ng giao diá»‡n bá»n vá»¯ng, Ä‘a ngÃ´n ngá»¯, thÃ nh pháº§n tÃ¡i sá»­ dá»¥ng vÃ  dashboard má»Ÿ rá»™ng tá»‘t.",
+    "primaryCta": "VÃ o khÃ´ng gian lÃ m viá»‡c",
+    "secondaryCta": "ÄÄƒng kÃ½ tÃ i khoáº£n",
     "cards": [
       {
-        "title": "Trải nghiệm doanh nghiệp",
-        "description": "Khung ứng dụng thực tế với điều hướng có cấu trúc, mẫu dùng chung và trạng thái giao diện hoàn chỉnh."
+        "title": "Tráº£i nghiá»‡m doanh nghiá»‡p",
+        "description": "Khung á»©ng dá»¥ng thá»±c táº¿ vá»›i Ä‘iá»u hÆ°á»›ng cÃ³ cáº¥u trÃºc, máº«u dÃ¹ng chung vÃ  tráº¡ng thÃ¡i giao diá»‡n hoÃ n chá»‰nh."
       },
       {
-        "title": "Hỗ trợ đa ngôn ngữ",
-        "description": "Tiếng Anh và tiếng Việt đã sẵn sàng, dễ mở rộng thêm ngôn ngữ mới."
+        "title": "Há»— trá»£ Ä‘a ngÃ´n ngá»¯",
+        "description": "Tiáº¿ng Anh vÃ  tiáº¿ng Viá»‡t Ä‘Ã£ sáºµn sÃ ng, dá»… má»Ÿ rá»™ng thÃªm ngÃ´n ngá»¯ má»›i."
       },
       {
-        "title": "Cá nhân hóa giao diện",
-        "description": "Chế độ sáng tối và màu chủ đạo được lưu lại giữa các phiên làm việc."
+        "title": "CÃ¡ nhÃ¢n hÃ³a giao diá»‡n",
+        "description": "Cháº¿ Ä‘á»™ sÃ¡ng tá»‘i vÃ  mÃ u chá»§ Ä‘áº¡o Ä‘Æ°á»£c lÆ°u láº¡i giá»¯a cÃ¡c phiÃªn lÃ m viá»‡c."
       }
     ],
     "stats": [
       {
-        "label": "Tuyến đường được bảo vệ",
+        "label": "Tuyáº¿n Ä‘Æ°á»ng Ä‘Æ°á»£c báº£o vá»‡",
         "value": "100%"
       },
       {
-        "label": "Khối giao diện tái sử dụng",
+        "label": "Khá»‘i giao diá»‡n tÃ¡i sá»­ dá»¥ng",
         "value": "20+"
       },
       {
-        "label": "Ngôn ngữ hỗ trợ",
+        "label": "NgÃ´n ngá»¯ há»— trá»£",
         "value": "2"
       }
     ]
   },
   "dashboard": {
-    "title": "Không gian vận hành",
-    "subtitle": "Theo dõi truy cập nhân viên, hoạt động quy trình và xử lý tệp an toàn trong một dashboard thống nhất.",
+    "title": "KhÃ´ng gian váº­n hÃ nh",
+    "subtitle": "Theo dÃµi truy cáº­p nhÃ¢n viÃªn, hoáº¡t Ä‘á»™ng quy trÃ¬nh vÃ  xá»­ lÃ½ tá»‡p an toÃ n trong má»™t dashboard thá»‘ng nháº¥t.",
     "breadcrumbs": {
-      "root": "Không gian làm việc",
-      "current": "Bảng điều khiển"
+      "root": "KhÃ´ng gian lÃ m viá»‡c",
+      "current": "Báº£ng Ä‘iá»u khiá»ƒn"
     },
-    "welcome": "Chào mừng quay lại, {{name}}",
-    "overview": "Tổng quan truy cập an toàn",
-    "quickActions": "Thao tác nhanh",
-    "recentActivity": "Hoạt động gần đây",
-    "recentFiles": "Tệp gần đây",
-    "dropzoneTitle": "Thả tệp để tải lên an toàn",
-    "dropzoneDescription": "Kéo thả tệp hoặc chọn để thêm tài liệu vào luồng xử lý nội bộ.",
-    "activityFeedSubtitle": "Những cập nhật vận hành mới nhất trong không gian làm việc.",
-    "tableTitle": "Tổng quan vận hành nhóm",
-    "tableSubtitle": "Xem trước trạng thái nhiệm vụ và tuân thủ bằng bảng dữ liệu dùng chung.",
-    "insightsTitle": "Chỉ số vận hành",
-    "insightsSubtitle": "Biểu đồ giả lập có thể được thay bằng dữ liệu thật mà không cần đổi cấu trúc layout.",
+    "welcome": "ChÃ o má»«ng quay láº¡i, {{name}}",
+    "overview": "Tá»•ng quan truy cáº­p an toÃ n",
+    "quickActions": "Thao tÃ¡c nhanh",
+    "recentActivity": "Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ã¢y",
+    "recentFiles": "Tá»‡p gáº§n Ä‘Ã¢y",
+    "dropzoneTitle": "Tháº£ tá»‡p Ä‘á»ƒ táº£i lÃªn an toÃ n",
+    "dropzoneDescription": "KÃ©o tháº£ tá»‡p hoáº·c chá»n Ä‘á»ƒ thÃªm tÃ i liá»‡u vÃ o luá»“ng xá»­ lÃ½ ná»™i bá»™.",
+    "activityFeedSubtitle": "Nhá»¯ng cáº­p nháº­t váº­n hÃ nh má»›i nháº¥t trong khÃ´ng gian lÃ m viá»‡c.",
+    "tableTitle": "Tá»•ng quan váº­n hÃ nh nhÃ³m",
+    "tableSubtitle": "Xem trÆ°á»›c tráº¡ng thÃ¡i nhiá»‡m vá»¥ vÃ  tuÃ¢n thá»§ báº±ng báº£ng dá»¯ liá»‡u dÃ¹ng chung.",
+    "insightsTitle": "Chá»‰ sá»‘ váº­n hÃ nh",
+    "insightsSubtitle": "Biá»ƒu Ä‘á»“ giáº£ láº­p cÃ³ thá»ƒ Ä‘Æ°á»£c thay báº±ng dá»¯ liá»‡u tháº­t mÃ  khÃ´ng cáº§n Ä‘á»•i cáº¥u trÃºc layout.",
     "tabs": {
-      "performance": "Hiệu suất",
-      "security": "Bảo mật"
+      "performance": "Hiá»‡u suáº¥t",
+      "security": "Báº£o máº­t"
     },
     "metrics": {
       "employees": {
-        "title": "Nhân viên đủ điều kiện",
-        "trend": "+8% quý này"
+        "title": "NhÃ¢n viÃªn Ä‘á»§ Ä‘iá»u kiá»‡n",
+        "trend": "+8% quÃ½ nÃ y"
       },
       "users": {
-        "title": "Người dùng hoạt động",
-        "trend": "Ổn định tuần này"
+        "title": "NgÆ°á»i dÃ¹ng hoáº¡t Ä‘á»™ng",
+        "trend": "á»”n Ä‘á»‹nh tuáº§n nÃ y"
       },
       "sessions": {
-        "title": "Phiên hoạt động",
-        "trend": "Đang xoay vòng an toàn"
+        "title": "PhiÃªn hoáº¡t Ä‘á»™ng",
+        "trend": "Äang xoay vÃ²ng an toÃ n"
       },
       "files": {
-        "title": "Tệp đã xử lý",
-        "trend": "24 giờ gần nhất"
+        "title": "Tá»‡p Ä‘Ã£ xá»­ lÃ½",
+        "trend": "24 giá» gáº§n nháº¥t"
       }
     },
     "quickActionItems": [
       {
-        "title": "Kiểm tra nhật ký truy cập",
-        "description": "Xem sự kiện xác thực và bất thường mới nhất."
+        "title": "Kiá»ƒm tra nháº­t kÃ½ truy cáº­p",
+        "description": "Xem sá»± kiá»‡n xÃ¡c thá»±c vÃ  báº¥t thÆ°á»ng má»›i nháº¥t."
       },
       {
-        "title": "Phê duyệt onboarding",
-        "description": "Xác nhận các hồ sơ nhân viên đang chờ kích hoạt."
+        "title": "PhÃª duyá»‡t onboarding",
+        "description": "XÃ¡c nháº­n cÃ¡c há»“ sÆ¡ nhÃ¢n viÃªn Ä‘ang chá» kÃ­ch hoáº¡t."
       },
       {
-        "title": "Xuất báo cáo",
-        "description": "Chuẩn bị bản tóm tắt vận hành mới nhất cho lãnh đạo."
+        "title": "Xuáº¥t bÃ¡o cÃ¡o",
+        "description": "Chuáº©n bá»‹ báº£n tÃ³m táº¯t váº­n hÃ nh má»›i nháº¥t cho lÃ£nh Ä‘áº¡o."
       }
     ],
     "activityItems": [
       {
-        "title": "Đăng ký mới đã được phê duyệt",
-        "description": "Nhân viên EMP1004 đã hoàn tất onboarding.",
-        "time": "10 phút trước",
-        "status": "Thành công"
+        "title": "ÄÄƒng kÃ½ má»›i Ä‘Ã£ Ä‘Æ°á»£c phÃª duyá»‡t",
+        "description": "NhÃ¢n viÃªn EMP1004 Ä‘Ã£ hoÃ n táº¥t onboarding.",
+        "time": "10 phÃºt trÆ°á»›c",
+        "status": "ThÃ nh cÃ´ng"
       },
       {
-        "title": "Refresh token đã xoay vòng",
-        "description": "Phiên làm việc được cập nhật trong quá trình khôi phục dashboard.",
-        "time": "22 phút trước",
-        "status": "Thông tin"
+        "title": "Refresh token Ä‘Ã£ xoay vÃ²ng",
+        "description": "PhiÃªn lÃ m viá»‡c Ä‘Æ°á»£c cáº­p nháº­t trong quÃ¡ trÃ¬nh khÃ´i phá»¥c dashboard.",
+        "time": "22 phÃºt trÆ°á»›c",
+        "status": "ThÃ´ng tin"
       },
       {
-        "title": "Còn thiếu xác nhận chính sách",
-        "description": "Ba nhân viên vẫn chưa xem chính sách mới.",
-        "time": "1 giờ trước",
-        "status": "Cảnh báo"
+        "title": "CÃ²n thiáº¿u xÃ¡c nháº­n chÃ­nh sÃ¡ch",
+        "description": "Ba nhÃ¢n viÃªn váº«n chÆ°a xem chÃ­nh sÃ¡ch má»›i.",
+        "time": "1 giá» trÆ°á»›c",
+        "status": "Cáº£nh bÃ¡o"
       }
     ],
     "filesItems": [
       {
         "name": "Quarterly_Access_Audit.pdf",
-        "meta": "PDF • 1.2 MB"
+        "meta": "PDF â€¢ 1.2 MB"
       },
       {
         "name": "Onboarding_Checklist.xlsx",
-        "meta": "Bảng tính • 420 KB"
+        "meta": "Báº£ng tÃ­nh â€¢ 420 KB"
       },
       {
         "name": "Security_Playbook_v3.docx",
-        "meta": "Tài liệu • 980 KB"
+        "meta": "TÃ i liá»‡u â€¢ 980 KB"
       }
     ],
     "chartLabels": [
@@ -238,138 +238,137 @@
       "T7",
       "CN"
     ],
-    "performanceLabel": "Thông lượng xác thực",
-    "securityLabel": "Mức sẵn sàng bảo mật",
+    "performanceLabel": "ThÃ´ng lÆ°á»£ng xÃ¡c thá»±c",
+    "securityLabel": "Má»©c sáºµn sÃ ng báº£o máº­t",
     "table": {
-      "searchPlaceholder": "Tìm nhân viên, phòng ban hoặc trạng thái"
+      "searchPlaceholder": "TÃ¬m nhÃ¢n viÃªn, phÃ²ng ban hoáº·c tráº¡ng thÃ¡i"
     },
-    "confirmTitle": "Xác nhận thao tác nhanh",
-    "confirmDescription": "Thao tác này hiện là placeholder ở frontend. Hãy giữ mẫu tương tác này cho luồng xử lý thực tế sau này.",
-    "performanceDescription": "Khối lượng xác thực trong tuần trên toàn không gian làm việc.",
-    "securityDescription": "Góc nhìn tổng hợp về chính sách, token và mức độ bảo vệ route.",
-    "previewAction": "Xuất bản xem trước",
-    "filesAction": "Hàng đợi tải lên",
-    "securityStatus": "Đang bảo vệ",
-    "performanceStatus": "Ổn định",
+    "confirmTitle": "XÃ¡c nháº­n thao tÃ¡c nhanh",
+    "confirmDescription": "Thao tÃ¡c nÃ y hiá»‡n lÃ  placeholder á»Ÿ frontend. HÃ£y giá»¯ máº«u tÆ°Æ¡ng tÃ¡c nÃ y cho luá»“ng xá»­ lÃ½ thá»±c táº¿ sau nÃ y.",
+    "performanceDescription": "Khá»‘i lÆ°á»£ng xÃ¡c thá»±c trong tuáº§n trÃªn toÃ n khÃ´ng gian lÃ m viá»‡c.",
+    "securityDescription": "GÃ³c nhÃ¬n tá»•ng há»£p vá» chÃ­nh sÃ¡ch, token vÃ  má»©c Ä‘á»™ báº£o vá»‡ route.",
+    "previewAction": "Xuáº¥t báº£n xem trÆ°á»›c",
+    "filesAction": "HÃ ng Ä‘á»£i táº£i lÃªn",
+    "securityStatus": "Äang báº£o vá»‡",
+    "performanceStatus": "á»”n Ä‘á»‹nh",
     "tableColumns": {
-      "owner": "Phụ trách",
-      "task": "Nhiệm vụ",
-      "department": "Phòng ban",
-      "status": "Trạng thái",
-      "dueDate": "Hạn xử lý",
-      "actions": "Thao tác"
+      "owner": "Phá»¥ trÃ¡ch",
+      "task": "Nhiá»‡m vá»¥",
+      "department": "PhÃ²ng ban",
+      "status": "Tráº¡ng thÃ¡i",
+      "dueDate": "Háº¡n xá»­ lÃ½",
+      "actions": "Thao tÃ¡c"
     },
-    "quickActionConfirm": "Tiếp tục",
-    "activityStatusSuccess": "Thành công",
-    "activityStatusInfo": "Thông tin",
-    "activityStatusWarning": "Cảnh báo",
-    "uploadSectionTitle": "Tiếp nhận an toàn",
-    "uploadSectionSubtitle": "Thu thập tệp nhạy cảm qua luồng kéo thả có kiểm soát.",
-    "recentFilesSubtitle": "Các tài liệu gần nhất mà nhóm đã xử lý.",
-    "quickActionsSubtitle": "Những thao tác thường được đội vận hành sử dụng.",
-    "sidebarCardTitle": "Trạng thái bảo mật",
-    "sidebarCardDescription": "Access token JWT, refresh token xoay vòng và route bảo vệ đang hoạt động.",
-    "sidebarChip": "Chuẩn doanh nghiệp"
+    "quickActionConfirm": "Tiáº¿p tá»¥c",
+    "activityStatusSuccess": "ThÃ nh cÃ´ng",
+    "activityStatusInfo": "ThÃ´ng tin",
+    "activityStatusWarning": "Cáº£nh bÃ¡o",
+    "uploadSectionTitle": "Tiáº¿p nháº­n an toÃ n",
+    "uploadSectionSubtitle": "Thu tháº­p tá»‡p nháº¡y cáº£m qua luá»“ng kÃ©o tháº£ cÃ³ kiá»ƒm soÃ¡t.",
+    "recentFilesSubtitle": "CÃ¡c tÃ i liá»‡u gáº§n nháº¥t mÃ  nhÃ³m Ä‘Ã£ xá»­ lÃ½.",
+    "quickActionsSubtitle": "Nhá»¯ng thao tÃ¡c thÆ°á»ng Ä‘Æ°á»£c Ä‘á»™i váº­n hÃ nh sá»­ dá»¥ng.",
+    "sidebarCardTitle": "Tráº¡ng thÃ¡i báº£o máº­t",
+    "sidebarCardDescription": "Access token JWT, refresh token xoay vÃ²ng vÃ  route báº£o vá»‡ Ä‘ang hoáº¡t Ä‘á»™ng.",
+    "sidebarChip": "Chuáº©n doanh nghiá»‡p"
   },
   "table": {
-    "searchPlaceholder": "Tìm bản ghi",
-    "rowsPerPage": "Số dòng mỗi trang",
-    "selected": "Đã chọn {{count}}",
-    "filterPlaceholder": "Lọc theo {{column}}",
-    "filters": "Bộ lọc cột",
-    "clearFilters": "Xóa bộ lọc",
-    "allOption": "Tất cả",
-    "columnOptionsDescription": "Sắp xếp, lọc cột này hoặc điều chỉnh các cột đang hiển thị trong bảng.",
-    "columnOptions": "Tùy chọn cột",
-    "manageColumns": "Quản lý cột",
-    "hideColumn": "Ẩn cột này",
-    "clearColumnFilter": "Xóa bộ lọc này",
-    "filterByColumn": "Lọc {{column}}",
-    "filterLabel": "Bộ lọc",
-    "sortLabel": "Sắp xếp",
-    "sortAscending": "Tăng dần",
-    "sortDescending": "Giảm dần"
+    "searchPlaceholder": "TÃ¬m báº£n ghi",
+    "rowsPerPage": "Sá»‘ dÃ²ng má»—i trang",
+    "selected": "ÄÃ£ chá»n {{count}}",
+    "filterPlaceholder": "Lá»c theo {{column}}",
+    "filters": "Bá»™ lá»c cá»™t",
+    "clearFilters": "XÃ³a bá»™ lá»c",
+    "allOption": "Táº¥t cáº£",
+    "columnOptionsDescription": "Sáº¯p xáº¿p, lá»c cá»™t nÃ y hoáº·c Ä‘iá»u chá»‰nh cÃ¡c cá»™t Ä‘ang hiá»ƒn thá»‹ trong báº£ng.",
+    "columnOptions": "TÃ¹y chá»n cá»™t",
+    "manageColumns": "Quáº£n lÃ½ cá»™t",
+    "hideColumn": "áº¨n cá»™t nÃ y",
+    "clearColumnFilter": "XÃ³a bá»™ lá»c nÃ y",
+    "filterByColumn": "Lá»c {{column}}",
+    "filterLabel": "Bá»™ lá»c",
+    "sortLabel": "Sáº¯p xáº¿p",
+    "sortAscending": "TÄƒng dáº§n",
+    "sortDescending": "Giáº£m dáº§n"
   },
   "upload": {
-    "helper": "Định dạng chấp nhận: {{types}} • Tối đa {{size}} MB mỗi tệp",
-    "invalidType": "Loại tệp không được hỗ trợ: {{name}}",
-    "invalidSize": "Tệp vượt quá kích thước tối đa: {{name}}",
-    "empty": "Chưa có tệp nào được chọn",
-    "disabled": "Chức năng tải lên hiện không khả dụng"
+    "helper": "Äá»‹nh dáº¡ng cháº¥p nháº­n: {{types}} â€¢ Tá»‘i Ä‘a {{size}} MB má»—i tá»‡p",
+    "invalidType": "Loáº¡i tá»‡p khÃ´ng Ä‘Æ°á»£c há»— trá»£: {{name}}",
+    "invalidSize": "Tá»‡p vÆ°á»£t quÃ¡ kÃ­ch thÆ°á»›c tá»‘i Ä‘a: {{name}}",
+    "empty": "ChÆ°a cÃ³ tá»‡p nÃ o Ä‘Æ°á»£c chá»n",
+    "disabled": "Chá»©c nÄƒng táº£i lÃªn hiá»‡n khÃ´ng kháº£ dá»¥ng"
   },
   "notifications": {
-    "themeUpdated": "Đã cập nhật giao diện.",
-    "languageUpdated": "Đã cập nhật ngôn ngữ.",
-    "logoutSuccess": "Bạn đã đăng xuất.",
-    "uploadReady": "Tệp đã sẵn sàng để tải lên.",
-    "uploadCleared": "Đã xóa tệp khỏi hàng đợi."
+    "themeUpdated": "ÄÃ£ cáº­p nháº­t giao diá»‡n.",
+    "languageUpdated": "ÄÃ£ cáº­p nháº­t ngÃ´n ngá»¯.",
+    "logoutSuccess": "Báº¡n Ä‘Ã£ Ä‘Äƒng xuáº¥t.",
+    "uploadReady": "Tá»‡p Ä‘Ã£ sáºµn sÃ ng Ä‘á»ƒ táº£i lÃªn.",
+    "uploadCleared": "ÄÃ£ xÃ³a tá»‡p khá»i hÃ ng Ä‘á»£i."
   },
   "pages": {
-    "notFoundAction": "Quay lại bảng điều khiển",
-    "unauthorizedAction": "Về trang chủ"
+    "notFoundAction": "Quay láº¡i báº£ng Ä‘iá»u khiá»ƒn",
+    "unauthorizedAction": "Vá» trang chá»§"
   },
   "topbar": {
-    "notificationsTitle": "Thông báo",
-    "notificationsSubtitle": "Các cập nhật gần đây từ không gian làm việc và hoạt động bảo mật.",
-    "openSettings": "Mở tùy chọn",
+    "notificationsTitle": "ThÃ´ng bÃ¡o",
+    "notificationsSubtitle": "CÃ¡c cáº­p nháº­t gáº§n Ä‘Ã¢y tá»« khÃ´ng gian lÃ m viá»‡c vÃ  hoáº¡t Ä‘á»™ng báº£o máº­t.",
+    "openSettings": "Má»Ÿ tÃ¹y chá»n",
     "notifications": [
       {
-        "title": "Đã hoàn tất rà soát bảo mật",
-        "description": "Đợt kiểm tra truy cập gần nhất đã hoàn tất mà không có phát hiện nghiêm trọng.",
-        "time": "12 phút trước"
+        "title": "ÄÃ£ hoÃ n táº¥t rÃ  soÃ¡t báº£o máº­t",
+        "description": "Äá»£t kiá»ƒm tra truy cáº­p gáº§n nháº¥t Ä‘Ã£ hoÃ n táº¥t mÃ  khÃ´ng cÃ³ phÃ¡t hiá»‡n nghiÃªm trá»ng.",
+        "time": "12 phÃºt trÆ°á»›c"
       },
       {
-        "title": "Đã kích hoạt tài khoản nhân viên mới",
-        "description": "Một tài khoản nhân viên vừa đăng ký đã sẵn sàng sử dụng cổng thông tin.",
-        "time": "46 phút trước"
+        "title": "ÄÃ£ kÃ­ch hoáº¡t tÃ i khoáº£n nhÃ¢n viÃªn má»›i",
+        "description": "Má»™t tÃ i khoáº£n nhÃ¢n viÃªn vá»«a Ä‘Äƒng kÃ½ Ä‘Ã£ sáºµn sÃ ng sá»­ dá»¥ng cá»•ng thÃ´ng tin.",
+        "time": "46 phÃºt trÆ°á»›c"
       },
       {
-        "title": "Nhắc nhở chính sách",
-        "description": "Ba nhân viên vẫn chưa xác nhận chính sách truy cập mới.",
-        "time": "2 giờ trước"
+        "title": "Nháº¯c nhá»Ÿ chÃ­nh sÃ¡ch",
+        "description": "Ba nhÃ¢n viÃªn váº«n chÆ°a xÃ¡c nháº­n chÃ­nh sÃ¡ch truy cáº­p má»›i.",
+        "time": "2 giá» trÆ°á»›c"
       }
     ]
   },
   "navChildren": {
-    "uploadQueue": "Hàng đợi tải lên",
-    "recentLibrary": "Thư viện gần đây",
-    "accessAnalytics": "Phân tích truy cập",
-    "serviceRequests": "Yêu cầu dịch vụ",
-    "securityPosture": "Trạng thái bảo mật",
-    "helpCenter": "Trung tâm trợ giúp"
+    "uploadQueue": "HÃ ng Ä‘á»£i táº£i lÃªn",
+    "recentLibrary": "ThÆ° viá»‡n gáº§n Ä‘Ã¢y",
+    "accessAnalytics": "PhÃ¢n tÃ­ch truy cáº­p",
+    "securityPosture": "Tráº¡ng thÃ¡i báº£o máº­t",
+    "helpCenter": "Report an issue"
   },
   "sectionPage": {
-    "queueTitle": "Hàng đợi hiện tại",
-    "workflowSubtitle": "Sử dụng các bước này để xử lý {{section}} mượt mà và không bị đứt gãy bàn giao.",
-    "subtitle": "Quản lý {{section}} trong không gian {{parent}} với cùng khung ứng dụng doanh nghiệp và quy trình vận hành nhất quán.",
-    "queueSubtitle": "Khu vực này đã sẵn sàng nhận dữ liệu backend thật khi luồng tương ứng được kết nối API.",
-    "emptyDescription": "Các bản ghi mới cho không gian {{parent}} sẽ xuất hiện tại đây sau khi phần này được kết nối.",
-    "emptyAction": "Làm mới khu vực",
-    "infoBanner": "{{section}} hiện đang dùng dữ liệu mẫu ở frontend và khung giao diện cho quy trình trực tiếp.",
-    "badge": "Không gian {{parent}}",
-    "emptyTitle": "Không có bản ghi nào đang chờ trong {{section}}",
+    "queueTitle": "HÃ ng Ä‘á»£i hiá»‡n táº¡i",
+    "workflowSubtitle": "Sá»­ dá»¥ng cÃ¡c bÆ°á»›c nÃ y Ä‘á»ƒ xá»­ lÃ½ {{section}} mÆ°á»£t mÃ  vÃ  khÃ´ng bá»‹ Ä‘á»©t gÃ£y bÃ n giao.",
+    "subtitle": "Quáº£n lÃ½ {{section}} trong khÃ´ng gian {{parent}} vá»›i cÃ¹ng khung á»©ng dá»¥ng doanh nghiá»‡p vÃ  quy trÃ¬nh váº­n hÃ nh nháº¥t quÃ¡n.",
+    "queueSubtitle": "Khu vá»±c nÃ y Ä‘Ã£ sáºµn sÃ ng nháº­n dá»¯ liá»‡u backend tháº­t khi luá»“ng tÆ°Æ¡ng á»©ng Ä‘Æ°á»£c káº¿t ná»‘i API.",
+    "emptyDescription": "CÃ¡c báº£n ghi má»›i cho khÃ´ng gian {{parent}} sáº½ xuáº¥t hiá»‡n táº¡i Ä‘Ã¢y sau khi pháº§n nÃ y Ä‘Æ°á»£c káº¿t ná»‘i.",
+    "emptyAction": "LÃ m má»›i khu vá»±c",
+    "infoBanner": "{{section}} hiá»‡n Ä‘ang dÃ¹ng dá»¯ liá»‡u máº«u á»Ÿ frontend vÃ  khung giao diá»‡n cho quy trÃ¬nh trá»±c tiáº¿p.",
+    "badge": "KhÃ´ng gian {{parent}}",
+    "emptyTitle": "KhÃ´ng cÃ³ báº£n ghi nÃ o Ä‘ang chá» trong {{section}}",
     "workflowItems": [
       {
-        "description": "Xác nhận mức ưu tiên, người phụ trách và yêu cầu chính sách cho {{section}} trước khi xử lý.",
-        "title": "Rà soát công việc mới"
+        "description": "XÃ¡c nháº­n má»©c Æ°u tiÃªn, ngÆ°á»i phá»¥ trÃ¡ch vÃ  yÃªu cáº§u chÃ­nh sÃ¡ch cho {{section}} trÆ°á»›c khi xá»­ lÃ½.",
+        "title": "RÃ  soÃ¡t cÃ´ng viá»‡c má»›i"
       },
       {
-        "description": "Gán người sở hữu rõ ràng và giữ các bước tiếp theo hiển thị trong toàn bộ không gian {{parent}}.",
-        "title": "Chốt trách nhiệm"
+        "description": "GÃ¡n ngÆ°á»i sá»Ÿ há»¯u rÃµ rÃ ng vÃ  giá»¯ cÃ¡c bÆ°á»›c tiáº¿p theo hiá»ƒn thá»‹ trong toÃ n bá»™ khÃ´ng gian {{parent}}.",
+        "title": "Chá»‘t trÃ¡ch nhiá»‡m"
       },
       {
-        "description": "Ghi lại kết quả và trạng thái bàn giao để nhóm tiếp theo có thể tiếp tục mà không bị chậm.",
-        "title": "Khép kín quy trình"
+        "description": "Ghi láº¡i káº¿t quáº£ vÃ  tráº¡ng thÃ¡i bÃ n giao Ä‘á»ƒ nhÃ³m tiáº¿p theo cÃ³ thá»ƒ tiáº¿p tá»¥c mÃ  khÃ´ng bá»‹ cháº­m.",
+        "title": "KhÃ©p kÃ­n quy trÃ¬nh"
       }
     ],
     "metrics": {
-      "ownersTitle": "Người phụ trách",
-      "slaTrend": "Mốc thời gian mục tiêu hiện tại cho {{section}}",
-      "slaTitle": "Khung thời gian xử lý",
-      "backlogTrend": "Các mục hiện đang chờ xử lý trong {{section}}",
-      "backlogTitle": "Mục đang mở",
-      "ownersTrend": "Mức độ bao phủ trong quy trình {{parent}}"
+      "ownersTitle": "NgÆ°á»i phá»¥ trÃ¡ch",
+      "slaTrend": "Má»‘c thá»i gian má»¥c tiÃªu hiá»‡n táº¡i cho {{section}}",
+      "slaTitle": "Khung thá»i gian xá»­ lÃ½",
+      "backlogTrend": "CÃ¡c má»¥c hiá»‡n Ä‘ang chá» xá»­ lÃ½ trong {{section}}",
+      "backlogTitle": "Má»¥c Ä‘ang má»Ÿ",
+      "ownersTrend": "Má»©c Ä‘á»™ bao phá»§ trong quy trÃ¬nh {{parent}}"
     },
-    "workflowTitle": "Hướng dẫn quy trình"
+    "workflowTitle": "HÆ°á»›ng dáº«n quy trÃ¬nh"
   }
 }

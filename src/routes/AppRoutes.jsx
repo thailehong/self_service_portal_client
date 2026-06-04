@@ -13,6 +13,7 @@ import { MealOrdersPage } from "../pages/MealOrdersPage";
 import { BookingBusPage } from "../pages/BookingBusPage";
 import { AdministratorPage } from "../pages/AdministratorPage";
 import { EWorkflowPage } from "../pages/EWorkflowPage";
+import { HelpCenterPage } from "../pages/HelpCenterPage";
 import { WorkspaceSectionPage } from "../pages/WorkspaceSectionPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { UnauthorizedPage } from "../pages/UnauthorizedPage";
@@ -59,6 +60,7 @@ export function AppRoutes() {
         <Route path="hr-admin/order-meal" element={<MealOrdersPage />} />
         <Route path="hr-admin/booking-bus" element={<BookingBusPage />} />
         <Route path="hr-admin/:featureId" element={<HrAdminFeaturePage />} />
+        <Route path="help/center" element={<HelpCenterPage />} />
         <Route
           path="administrator"
           element={
