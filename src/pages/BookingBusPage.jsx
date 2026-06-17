@@ -910,7 +910,7 @@ export function BookingBusPage() {
       <PageHeader
         breadcrumbs={[
           { label: t("dashboard.breadcrumbs.root"), to: "/dashboard" },
-          { label: t("nav.hr_admin"), to: "/dashboard/hr-admin" },
+          { label: "Self Service", to: "/dashboard/self-service" },
           { label: "Booking Bus" },
         ]}
         title="Booking Bus"

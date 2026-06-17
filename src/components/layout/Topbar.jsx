@@ -40,6 +40,11 @@ import {
   getNavigationLabel,
   getSearchableSidebarNavigationForUser,
 } from "../../app/navigation";
+import {
+  externalApplicationGroups,
+  getApplicationsForUser,
+  openExternalApplication,
+} from "../../app/appRegistry";
 import { getHrAdminFeatures } from "../../features/hrAdmin/hrAdminCatalog";
 import { openNotificationLink } from "../../utils/notificationLinks";
 
@@ -63,6 +68,7 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
     markingIds,
     reloadNotifications,
     markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useNotifications();
   const navigate = useNavigate();
   const [notificationAnchor, setNotificationAnchor] = useState(null);
@@ -106,7 +112,23 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
           .join(" "),
       }));
 
-      return [...sidebarItems, ...hrAdminFeatureItems];
+      const externalGroupById = Object.fromEntries(
+        externalApplicationGroups.map((group) => [group.id, group]),
+      );
+      const externalApplicationItems = getApplicationsForUser(auth.user)
+        .filter((application) => application.type === "external")
+        .map((application) => {
+          const group = externalGroupById[application.groupId];
+
+          return {
+            ...application,
+            parentId: group?.id,
+            parentLabel: group?.label,
+            searchText: [application.label, group?.label].filter(Boolean).join(" "),
+          };
+        });
+
+      return [...sidebarItems, ...externalApplicationItems, ...hrAdminFeatureItems];
     },
     [auth.user, t],
   );
@@ -141,6 +163,12 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
   const handleSearchItemClick = (item) => {
     setSearchValue("");
     setSearchOpen(false);
+
+    if (item.type === "external") {
+      openExternalApplication(item.href);
+      return;
+    }
+
     navigate(item.to);
   };
 
@@ -362,6 +390,17 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
                     disabled={notificationsLoading}
                   >
                     <RefreshRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Mark all as read">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => void markAllNotificationsAsRead()}
+                    disabled={!notifications.length || notificationsLoading}
+                  >
+                    <DoneRoundedIcon fontSize="small" />
                   </IconButton>
                 </span>
               </Tooltip>

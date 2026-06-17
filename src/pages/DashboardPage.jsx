@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -7,12 +8,12 @@ import {
   IconButton,
   Skeleton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
-import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
 import CampaignRoundedIcon from "@mui/icons-material/CampaignRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import Groups2RoundedIcon from "@mui/icons-material/Groups2Rounded";
@@ -23,6 +24,12 @@ import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
+import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
+import ApprovalRoundedIcon from "@mui/icons-material/ApprovalRounded";
+import PlaylistAddCheckRoundedIcon from "@mui/icons-material/PlaylistAddCheckRounded";
+import StarRoundedIcon from "@mui/icons-material/StarRounded";
+import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { selectAuth } from "../features/auth/authSlice";
@@ -35,10 +42,16 @@ import {
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { useNotifications } from "../hooks/useNotifications";
-import { PageHeader } from "../components/layout/PageHeader";
 import { SectionCard } from "../components/layout/SectionCard";
-import { formatDateLabel } from "../utils/formatters";
 import { openNotificationLink } from "../utils/notificationLinks";
+import { workflowApi } from "../services/api/workflowApi";
+import { portalFavoritesApi } from "../services/api/portalFavoritesApi";
+import {
+  getFavoriteApplicationOptions,
+  getApplicationsForUser,
+  openExternalApplication,
+} from "../app/appRegistry";
+import { getErrorMessage } from "./workflow/workflowUtils";
 
 function getUpdateIcon(updateId) {
   if (updateId === "update-hires") {
@@ -65,11 +78,29 @@ const dashboardContentSx = {
   gap: 2.5,
 };
 
+const quickAccessIconColors = [
+  "primary.main",
+  "success.main",
+  "warning.main",
+  "secondary.main",
+  "info.main",
+  "error.main",
+  "text.secondary",
+];
+const dashboardQuickAccessApplicationIds = [
+  "eworkflow",
+  "order_meal",
+  "booking_bus",
+  "help_center",
+];
+
 const prioritizedUserKeys = [
   "displayName",
   "employeeID",
   "email",
   "department",
+  "BU",
+  "bu",
   "jobTitle",
   "location",
   "company",
@@ -86,13 +117,23 @@ const hiddenUserFieldKeys = new Set([
   "updatedat",
   "accounttype",
   "createdatutc",
-  "bu",
+  "ccn",
 ]);
 
 function shouldHideUserField(key) {
   return hiddenUserFieldKeys.has(
     key.replace(/[_-]+/g, "").trim().toLowerCase(),
   );
+}
+
+function normalizeUserFieldKey(key) {
+  const normalizedKey = key.replace(/[_-]+/g, "").trim().toLowerCase();
+
+  if (normalizedKey === "employeeid") {
+    return "employeeid";
+  }
+
+  return normalizedKey;
 }
 
 function formatUserFieldLabel(key, t) {
@@ -103,6 +144,8 @@ function formatUserFieldLabel(key, t) {
     employeeId: t("common.employeeId"),
     email: t("common.email"),
     department: t("common.department"),
+    BU: "BU",
+    bu: "BU",
     jobTitle: t("dashboard.userInfoFields.jobTitle", {
       defaultValue: "Job title",
     }),
@@ -148,21 +191,130 @@ function formatUserFieldValue(value, t) {
   return String(value);
 }
 
+function formatAnnouncementDate(date) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function getDashboardUserName(user) {
+  if (!user || typeof user !== "object") {
+    return "User";
+  }
+
+  return (
+    user.displayName
+    || user.fullName
+    || user.name
+    || [user.firstName, user.lastName].filter(Boolean).join(" ")
+    || user.username
+    || "User"
+  );
+}
+
+function DashboardWelcomeHeader({ user, now }) {
+  const displayName = getDashboardUserName(user);
+  const dateLabel = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(now);
+  const timeLabel = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(now);
+
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        display: "grid",
+        gap: 2,
+        gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) auto" },
+        alignItems: "center",
+      }}
+    >
+      <Stack spacing={0.75}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          Welcome back,
+        </Typography>
+        <Typography variant="h3">{displayName}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Here's what's happening in your workspace today.
+        </Typography>
+      </Stack>
+
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={{ xs: 1, sm: 2.5 }}
+        divider={
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{ display: { xs: "none", sm: "block" } }}
+          />
+        }
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        sx={{
+          color: "text.primary",
+          justifySelf: { xs: "start", md: "end" },
+          alignSelf: "center",
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <EventAvailableRoundedIcon fontSize="small" color="action" />
+          <Typography variant="subtitle2">{dateLabel}</Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <AccessTimeRoundedIcon fontSize="small" color="action" />
+          <Typography variant="subtitle2">{timeLabel}</Typography>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+}
+
 function normalizeDashboardSectionOrder(order, sectionIds) {
   const safeOrder = Array.isArray(order) ? order : [];
   const normalizedOrder = safeOrder.filter(
     (sectionId, index) =>
       sectionIds.includes(sectionId) && safeOrder.indexOf(sectionId) === index,
   );
+  const prioritySectionIds = [
+    "workflow-stats",
+    "quick-access",
+    "favorite-applications",
+    "announcements",
+  ];
+  const legacyGroupedSectionIds = ["tasks-favorites", "quick-announcements"];
+  const orderWithoutLegacySections = normalizedOrder.filter(
+    (sectionId) => !legacyGroupedSectionIds.includes(sectionId),
+  );
+  const priorityMissingSections = prioritySectionIds.filter(
+    (sectionId) =>
+      sectionIds.includes(sectionId) && !orderWithoutLegacySections.includes(sectionId),
+  );
+  const remainingMissingSections = sectionIds.filter(
+    (sectionId) =>
+      !orderWithoutLegacySections.includes(sectionId) &&
+      !priorityMissingSections.includes(sectionId),
+  );
 
   return [
-    ...normalizedOrder,
-    ...sectionIds.filter((sectionId) => !normalizedOrder.includes(sectionId)),
+    ...priorityMissingSections,
+    ...orderWithoutLegacySections,
+    ...remainingMissingSections,
   ];
 }
 
 function normalizeHiddenSections(hiddenSections, sectionIds) {
-  const safeHiddenSections = Array.isArray(hiddenSections) ? hiddenSections : [];
+  const safeHiddenSections = Array.isArray(hiddenSections)
+    ? hiddenSections
+    : [];
 
   return safeHiddenSections.filter(
     (sectionId, index) =>
@@ -172,22 +324,226 @@ function normalizeHiddenSections(hiddenSections, sectionIds) {
 }
 
 function moveSection(order, draggedSectionId, targetSectionId) {
-  if (!draggedSectionId || !targetSectionId || draggedSectionId === targetSectionId) {
+  if (
+    !draggedSectionId ||
+    !targetSectionId ||
+    draggedSectionId === targetSectionId
+  ) {
     return order;
   }
 
   const nextOrder = [...order];
   const draggedIndex = nextOrder.indexOf(draggedSectionId);
-  const targetIndex = nextOrder.indexOf(targetSectionId);
-
-  if (draggedIndex === -1 || targetIndex === -1) {
+  if (draggedIndex === -1 || nextOrder.indexOf(targetSectionId) === -1) {
     return order;
   }
 
   nextOrder.splice(draggedIndex, 1);
+  const targetIndex = nextOrder.indexOf(targetSectionId);
+
+  if (targetIndex === -1) {
+    return order;
+  }
+
   nextOrder.splice(targetIndex, 0, draggedSectionId);
 
   return nextOrder;
+}
+
+function ApplicationTile({
+  application,
+  favorite,
+  saving,
+  variant = "horizontal",
+  iconColor = "primary.main",
+  showFavoriteAction = false,
+  onOpen,
+  onToggleFavorite,
+}) {
+  const Icon = application.icon;
+  const isSquare = variant === "square";
+  const isFavoriteTile = variant === "favorite";
+
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={() => onOpen(application)}
+      sx={{
+        width: isSquare ? "80%" : "100%",
+        minHeight: isSquare ? 0 : 72,
+        aspectRatio: isSquare || isFavoriteTile ? "1 / 1" : "auto",
+        border: (theme) => `1px solid ${theme.palette.divider}`,
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        color: "text.primary",
+        display: "flex",
+        flexDirection: isSquare || isFavoriteTile ? "column" : "row",
+        alignItems: "center",
+        justifyContent: isSquare || isFavoriteTile ? "center" : "flex-start",
+        gap: isSquare || isFavoriteTile ? 0.75 : 1.25,
+        p: isSquare || isFavoriteTile ? 1 : 1.25,
+        textAlign: isSquare || isFavoriteTile ? "center" : "left",
+        cursor: "pointer",
+        transition: "border-color 150ms ease, background-color 150ms ease",
+        "&:hover": {
+          borderColor: "primary.main",
+          bgcolor: "action.hover",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: isSquare || isFavoriteTile ? "auto" : 38,
+          height: isSquare || isFavoriteTile ? "auto" : 38,
+          borderRadius: isSquare || isFavoriteTile ? 0 : 1,
+          display: "grid",
+          placeItems: "center",
+          color: isSquare || isFavoriteTile ? iconColor : "primary.main",
+          bgcolor: isSquare || isFavoriteTile
+            ? "transparent"
+            : (theme) => theme.palette.action.hover,
+          flexShrink: 0,
+        }}
+      >
+        <Icon fontSize={isSquare || isFavoriteTile ? "large" : "small"} />
+      </Box>
+      <Typography
+        variant="subtitle2"
+        sx={{
+          flex: isSquare || isFavoriteTile ? "0 1 auto" : 1,
+          minWidth: 0,
+          width: isSquare || isFavoriteTile ? "100%" : "auto",
+          overflowWrap: "anywhere",
+          lineHeight: 1.25,
+          display: "-webkit-box",
+          WebkitLineClamp: isSquare || isFavoriteTile ? 2 : "unset",
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {application.label}
+      </Typography>
+      {showFavoriteAction ? (
+        <Tooltip title={favorite ? "Remove favorite" : "Add favorite"}>
+          <span>
+            <IconButton
+              size="small"
+              disabled={saving}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFavorite(application);
+              }}
+              sx={{ flexShrink: 0 }}
+            >
+              {favorite ? (
+                <StarRoundedIcon fontSize="small" color="warning" />
+              ) : (
+                <StarBorderRoundedIcon fontSize="small" />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+    </Box>
+  );
+}
+
+function WorkflowStatCard({
+  title,
+  value,
+  helper,
+  icon,
+  color,
+  accentBg,
+  onClick,
+  loading,
+}) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      aria-label={`${title}: ${helper}`}
+      sx={{
+        width: "100%",
+        height: 192,
+        border: (theme) => `1px solid ${theme.palette.divider}`,
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        color: "text.primary",
+        p: 2.5,
+        textAlign: "left",
+        cursor: "pointer",
+        "&:hover": {
+          borderColor: color,
+          bgcolor: "action.hover",
+        },
+      }}
+    >
+      <Stack spacing={2}>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Box
+            sx={{
+              width: 34,
+              height: 34,
+              borderRadius: 1,
+              display: "grid",
+              placeItems: "center",
+              bgcolor: accentBg,
+              color,
+              flexShrink: 0,
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
+            {title}
+          </Typography>
+        </Stack>
+        {loading ? (
+          <Skeleton variant="text" width={72} height={56} />
+        ) : (
+          <Typography variant="h2" sx={{ color, lineHeight: 0.95 }}>
+            {value}
+          </Typography>
+        )}
+        <Typography variant="body2">{helper}</Typography>
+      </Stack>
+    </Box>
+  );
+}
+
+function AddFavoriteTile({ onClick }) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={{
+        width: "100%",
+        aspectRatio: "1 / 1",
+        border: (theme) => `1px dashed ${theme.palette.primary.light}`,
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        color: "primary.main",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1,
+        p: 1,
+        cursor: "pointer",
+        "&:hover": {
+          bgcolor: "action.hover",
+          borderColor: "primary.main",
+        },
+      }}
+    >
+      <AddRoundedIcon fontSize="large" />
+      <Typography variant="subtitle2">Add Favorite</Typography>
+    </Box>
+  );
 }
 
 export function DashboardPage() {
@@ -203,73 +559,200 @@ export function DashboardPage() {
     markingIds,
     reloadNotifications,
     markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useNotifications();
   const [draggedSectionId, setDraggedSectionId] = useState(null);
   const [dragOverSectionId, setDragOverSectionId] = useState(null);
+  const [workflowStats, setWorkflowStats] = useState({
+    pendingApprovals: 0,
+    inProgressRequests: 0,
+    loading: false,
+    error: "",
+  });
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [favoritesError, setFavoritesError] = useState("");
+  const [savingFavoriteIds, setSavingFavoriteIds] = useState([]);
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
 
-  const handleNotificationClick = useCallback(async (item) => {
-    if (!item?.link) {
-      return;
-    }
+  const handleNotificationClick = useCallback(
+    async (item) => {
+      if (!item?.link) {
+        return;
+      }
 
-    try {
-      await markNotificationAsRead(item.id);
-    } finally {
-      openNotificationLink(item.link, navigate);
-    }
-  }, [markNotificationAsRead, navigate]);
-
-  const upcomingEvent = useMemo(
-    () => ({
-      title: t("dashboard.upcomingEventTitle", {
-        defaultValue: "Quarterly Town Hall",
-      }),
-      description: t("dashboard.upcomingEventDescription", {
-        defaultValue:
-          "Leadership will share business updates, new initiatives, and open Q&A with employees.",
-      }),
-      schedule: formatDateLabel(new Date(Date.now() + 5 * 86400000)),
-      location: t("dashboard.upcomingEventLocation", {
-        defaultValue: "Main auditorium and livestream",
-      }),
-    }),
-    [t],
+      try {
+        await markNotificationAsRead(item.id);
+      } finally {
+        openNotificationLink(item.link, navigate);
+      }
+    },
+    [markNotificationAsRead, navigate],
   );
 
-  const upcomingTrainings = useMemo(
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWorkflowStats() {
+      setWorkflowStats((current) => ({ ...current, loading: true, error: "" }));
+      try {
+        const [pendingApprovals, myRequests] = await Promise.all([
+          workflowApi.getPendingMyApproval(),
+          workflowApi.getMyRequests(),
+        ]);
+        if (cancelled) {
+          return;
+        }
+
+        setWorkflowStats({
+          pendingApprovals: pendingApprovals.length,
+          inProgressRequests: myRequests.filter(
+            (request) => request.status === "InProgress",
+          ).length,
+          loading: false,
+          error: "",
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setWorkflowStats({
+          pendingApprovals: 0,
+          inProgressRequests: 0,
+          loading: false,
+          error: getErrorMessage(error, "Could not load eWorkflow tasks."),
+        });
+      }
+    }
+
+    void loadWorkflowStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFavorites() {
+      setFavoritesLoading(true);
+      setFavoritesError("");
+      try {
+        const favorites = await portalFavoritesApi.getFavorites();
+        if (!cancelled) {
+          setFavoriteIds(favorites);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setFavoritesError(
+            getErrorMessage(error, "Could not load favorite applications."),
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setFavoritesLoading(false);
+        }
+      }
+    }
+
+    void loadFavorites();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleOpenApplication = useCallback(
+    (application) => {
+      if (application.type === "external") {
+        openExternalApplication(application.href);
+        return;
+      }
+
+      navigate(application.to);
+    },
+    [navigate],
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (application) => {
+      const isFavorite = favoriteIds.includes(application.id);
+      setFavoritesError("");
+      setSavingFavoriteIds((current) => [...current, application.id]);
+
+      try {
+        if (isFavorite) {
+          await portalFavoritesApi.removeFavorite(application.id);
+          setFavoriteIds((current) =>
+            current.filter((applicationId) => applicationId !== application.id),
+          );
+        } else {
+          await portalFavoritesApi.addFavorite(application.id);
+          setFavoriteIds((current) =>
+            current.includes(application.id)
+              ? current
+              : [...current, application.id],
+          );
+        }
+      } catch (error) {
+        setFavoritesError(
+          getErrorMessage(error, "Could not update favorite applications."),
+        );
+      } finally {
+        setSavingFavoriteIds((current) =>
+          current.filter((applicationId) => applicationId !== application.id),
+        );
+      }
+    },
+    [favoriteIds],
+  );
+
+  const announcements = useMemo(
     () => [
       {
-        id: "training-security",
-        title: t("dashboard.trainingSecurityTitle", {
-          defaultValue: "Security Awareness Refresher",
+        id: "maintenance",
+        title: t("dashboard.announcementMaintenanceTitle", {
+          defaultValue: "System Maintenance Notice - DMS Portal",
         }),
-        description: t("dashboard.trainingSecurityDescription", {
+        description: t("dashboard.announcementMaintenanceDescription", {
           defaultValue:
-            "Review current phishing patterns, safe handling rules, and incident reporting steps.",
+            "The system will be upgraded from 00:00 to 04:00.",
         }),
-        schedule: formatDateLabel(new Date(Date.now() + 2 * 86400000)),
+        date: formatAnnouncementDate(new Date(Date.now() - 1 * 86400000)),
       },
       {
-        id: "training-manager",
-        title: t("dashboard.trainingManagerTitle", {
-          defaultValue: "Manager Onboarding Toolkit",
+        id: "ewps-release",
+        title: t("dashboard.announcementEwpsTitle", {
+          defaultValue: "New eWPS Release is Now Available",
         }),
-        description: t("dashboard.trainingManagerDescription", {
+        description: t("dashboard.announcementEwpsDescription", {
           defaultValue:
-            "A short session for new managers covering approvals, policy acknowledgements, and team workflows.",
+            "Please check and use the latest version for your operations.",
         }),
-        schedule: formatDateLabel(new Date(Date.now() + 7 * 86400000)),
+        date: formatAnnouncementDate(new Date(Date.now() - 2 * 86400000)),
       },
       {
-        id: "training-compliance",
-        title: t("dashboard.trainingComplianceTitle", {
-          defaultValue: "Compliance Documentation Basics",
+        id: "ppe-reminder",
+        title: t("dashboard.announcementPpeTitle", {
+          defaultValue: "Safety Reminder: PPE Compliance",
         }),
-        description: t("dashboard.trainingComplianceDescription", {
+        description: t("dashboard.announcementPpeDescription", {
           defaultValue:
-            "Walk through the latest documentation standards for audit-ready employee records.",
+            "Please ensure proper PPE usage in all production areas.",
         }),
-        schedule: formatDateLabel(new Date(Date.now() + 11 * 86400000)),
+        date: formatAnnouncementDate(new Date(Date.now() - 3 * 86400000)),
       },
     ],
     [t],
@@ -306,7 +789,8 @@ export function DashboardPage() {
       {
         id: "update-it",
         title: t("dashboard.departmentUpdateTechTitle", {
-          defaultValue: "Technology team published workspace maintenance notice",
+          defaultValue:
+            "Technology team published workspace maintenance notice",
         }),
         description: t("dashboard.departmentUpdateTechDescription", {
           defaultValue:
@@ -320,11 +804,6 @@ export function DashboardPage() {
     [t],
   );
 
-  const breadcrumbs = [
-    { label: t("dashboard.breadcrumbs.root"), to: "/" },
-    { label: t("dashboard.breadcrumbs.current") },
-  ];
-
   const userInfoItems = useMemo(() => {
     if (!auth.user || typeof auth.user !== "object") {
       return [];
@@ -334,19 +813,27 @@ export function DashboardPage() {
     const orderedEntries = [];
 
     prioritizedUserKeys.forEach((key) => {
+      const normalizedKey = normalizeUserFieldKey(key);
       if (
         Object.prototype.hasOwnProperty.call(auth.user, key) &&
-        !shouldHideUserField(key)
+        !shouldHideUserField(key) &&
+        !seenKeys.has(normalizedKey)
       ) {
         orderedEntries.push([key, auth.user[key]]);
-        seenKeys.add(key);
+        seenKeys.add(normalizedKey);
       }
     });
 
     Object.entries(auth.user)
-      .filter(([key]) => !seenKeys.has(key) && !shouldHideUserField(key))
+      .filter(([key]) => {
+        const normalizedKey = normalizeUserFieldKey(key);
+        return !seenKeys.has(normalizedKey) && !shouldHideUserField(key);
+      })
       .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
-      .forEach((entry) => orderedEntries.push(entry));
+      .forEach(([key, value]) => {
+        orderedEntries.push([key, value]);
+        seenKeys.add(normalizeUserFieldKey(key));
+      });
 
     return orderedEntries.map(([key, value]) => ({
       key,
@@ -355,8 +842,265 @@ export function DashboardPage() {
     }));
   }, [auth.user, t]);
 
+  const quickAccessApplications = useMemo(
+    () => {
+      const applicationsById = new Map(
+        getApplicationsForUser(auth.user).map((application) => [
+          application.id,
+          application,
+        ]),
+      );
+
+      return dashboardQuickAccessApplicationIds
+        .map((applicationId) => applicationsById.get(applicationId))
+        .filter(Boolean);
+    },
+    [auth.user],
+  );
+
+  const favoriteApplicationOptions = useMemo(
+    () => getFavoriteApplicationOptions(auth.user),
+    [auth.user],
+  );
+
+  const favoriteApplications = useMemo(
+    () =>
+      favoriteIds
+        .map((applicationId) =>
+          favoriteApplicationOptions.find(
+            (application) => application.id === applicationId,
+          ),
+        )
+        .filter(Boolean),
+    [favoriteApplicationOptions, favoriteIds],
+  );
+
+  const myTaskCount =
+    workflowStats.pendingApprovals + workflowStats.inProgressRequests;
+
   const sectionDefinitions = useMemo(
     () => [
+      {
+        id: "workflow-stats",
+        managerLabel: "Dashboard stats",
+        content: (
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(3, minmax(0, 1fr))",
+              },
+            }}
+          >
+            <WorkflowStatCard
+              title="My tasks"
+              value={myTaskCount}
+              helper="Pending Tasks"
+              icon={<AssignmentTurnedInRoundedIcon fontSize="small" />}
+              color="success.main"
+              accentBg="#E8F7EF"
+              loading={workflowStats.loading}
+              onClick={() => navigate("/dashboard/eworkflow")}
+            />
+            <WorkflowStatCard
+              title="My Approval"
+              value={workflowStats.pendingApprovals}
+              helper="Pending Approvals"
+              icon={<ApprovalRoundedIcon fontSize="small" />}
+              color="primary.main"
+              accentBg="#EAF1FF"
+              loading={workflowStats.loading}
+              onClick={() => navigate("/dashboard/eworkflow?tab=pending")}
+            />
+            <WorkflowStatCard
+              title="My Request"
+              value={workflowStats.inProgressRequests}
+              helper="Total Requests"
+              icon={<PlaylistAddCheckRoundedIcon fontSize="small" />}
+              color="secondary.main"
+              accentBg="#F2E9FF"
+              loading={workflowStats.loading}
+              onClick={() => navigate("/dashboard/eworkflow?tab=mine")}
+            />
+          </Box>
+        ),
+      },
+      {
+        id: "quick-access",
+        managerLabel: "Quick Access",
+        content: (
+          <SectionCard
+            title="Quick Access"
+            action={
+              <Button
+                size="small"
+                onClick={() => navigate("/dashboard/self-service")}
+              >
+                See all
+              </Button>
+            }
+            cardSx={dashboardCardSx}
+          >
+            <Box
+              sx={{
+                display: "grid",
+                gap: 1.5,
+                gridTemplateColumns: {
+                  xs: "repeat(2, minmax(0, 1fr))",
+                  sm: "repeat(4, minmax(0, 1fr))",
+                },
+                justifyItems: "center",
+              }}
+            >
+              {quickAccessApplications.map((application, index) => (
+                <ApplicationTile
+                  key={application.id}
+                  application={application}
+                  variant="square"
+                  iconColor={
+                    quickAccessIconColors[index % quickAccessIconColors.length]
+                  }
+                  onOpen={handleOpenApplication}
+                />
+              ))}
+            </Box>
+          </SectionCard>
+        ),
+      },
+      {
+        id: "favorite-applications",
+        managerLabel: "Favorite applications",
+        content: (
+          <SectionCard
+            title="Favorite applications"
+            action={
+              <Button
+                size="small"
+                onClick={() => navigate("/dashboard/utility-application")}
+              >
+                Manage
+              </Button>
+            }
+            cardSx={{ ...dashboardCardSx, height: "auto" }}
+          >
+            <Stack spacing={2}>
+              {favoritesError ? (
+                <Alert severity="warning">{favoritesError}</Alert>
+              ) : null}
+              {favoritesLoading ? (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1.5,
+                    gridTemplateColumns: {
+                      xs: "repeat(2, minmax(0, 1fr))",
+                      sm: "repeat(3, minmax(0, 1fr))",
+                      md: "repeat(5, minmax(0, 1fr))",
+                    },
+                  }}
+                >
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <Skeleton
+                      key={index}
+                      variant="rounded"
+                      sx={{ aspectRatio: "1 / 1" }}
+                    />
+                  ))}
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1.5,
+                    gridTemplateColumns: {
+                      xs: "repeat(2, minmax(0, 1fr))",
+                      sm: "repeat(3, minmax(0, 1fr))",
+                      md: "repeat(5, minmax(0, 1fr))",
+                    },
+                  }}
+                >
+                  {favoriteApplications.map((application, index) => (
+                    <ApplicationTile
+                      key={application.id}
+                      application={application}
+                      variant="favorite"
+                      iconColor={
+                        quickAccessIconColors[index % quickAccessIconColors.length]
+                      }
+                      onOpen={handleOpenApplication}
+                    />
+                  ))}
+                  <AddFavoriteTile
+                    onClick={() => navigate("/dashboard/utility-application")}
+                  />
+                </Box>
+              )}
+            </Stack>
+          </SectionCard>
+        ),
+      },
+      {
+        id: "announcements",
+        managerLabel: "Announcements",
+        content: (
+          <SectionCard
+            title="Announcements"
+            action={<Button size="small">View all</Button>}
+            cardSx={{ ...dashboardCardSx, height: "auto" }}
+          >
+            <Stack spacing={0} divider={<Divider flexItem />}>
+              {announcements.map((item) => (
+                <Stack
+                  key={item.id}
+                  direction="row"
+                  spacing={1.75}
+                  alignItems="flex-start"
+                  sx={{ py: 1.5 }}
+                >
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      display: "grid",
+                      placeItems: "center",
+                      color: "primary.main",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CampaignRoundedIcon fontSize="small" />
+                  </Box>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                    >
+                      <Typography variant="subtitle2">{item.title}</Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ whiteSpace: "nowrap", pt: 0.25 }}
+                      >
+                        {item.date}
+                      </Typography>
+                    </Stack>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {item.description}
+                    </Typography>
+                  </Box>
+                </Stack>
+              ))}
+            </Stack>
+          </SectionCard>
+        ),
+      },
       {
         id: "user-info",
         managerLabel: t("dashboard.userInfoSectionTitle", {
@@ -367,10 +1111,6 @@ export function DashboardPage() {
           <SectionCard
             title={t("dashboard.userInfoSectionTitle", {
               defaultValue: "User Information",
-            })}
-            subtitle={t("dashboard.userInfoSectionSubtitle", {
-              defaultValue:
-                "All profile fields currently available in the authenticated session.",
             })}
             action={<AccountCircleRoundedIcon color="action" />}
           >
@@ -435,9 +1175,6 @@ export function DashboardPage() {
             title={t("dashboard.notificationsSectionTitle", {
               defaultValue: "Notifications",
             })}
-            subtitle={t("dashboard.notificationsSectionSubtitle", {
-              defaultValue: "All recent notifications for the current user.",
-            })}
             action={
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <NotificationsRoundedIcon color="action" />
@@ -448,6 +1185,17 @@ export function DashboardPage() {
                 >
                   <RefreshRoundedIcon fontSize="small" />
                 </IconButton>
+                <Tooltip title="Mark all as read">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={() => void markAllNotificationsAsRead()}
+                      disabled={!notifications.length || notificationsLoading}
+                    >
+                      <DoneRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
               </Stack>
             }
             cardSx={dashboardCardSx}
@@ -500,7 +1248,10 @@ export function DashboardPage() {
                         flexShrink: 0,
                       }}
                     >
-                      <NotificationsRoundedIcon fontSize="small" color="primary" />
+                      <NotificationsRoundedIcon
+                        fontSize="small"
+                        color="primary"
+                      />
                     </Box>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Stack
@@ -509,8 +1260,14 @@ export function DashboardPage() {
                         spacing={2}
                         alignItems="flex-start"
                       >
-                        <Typography variant="subtitle2">{item.title}</Typography>
-                        <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Typography variant="subtitle2">
+                          {item.title}
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                        >
                           <Typography
                             variant="caption"
                             color="text.secondary"
@@ -554,107 +1311,6 @@ export function DashboardPage() {
         ),
       },
       {
-        id: "events-training",
-        managerLabel: t("dashboard.eventsTrainingSectionTitle", {
-          defaultValue: "Events and Training",
-        }),
-        content: (
-          <SectionCard
-            title={t("dashboard.eventsTrainingSectionTitle", {
-              defaultValue: "Events and Training",
-            })}
-            subtitle={t("dashboard.eventsTrainingSectionSubtitle", {
-              defaultValue:
-                "Upcoming company events and employee training sessions.",
-            })}
-            action={<EventAvailableRoundedIcon color="action" />}
-            cardSx={dashboardCardSx}
-            contentSx={dashboardContentSx}
-          >
-            <Box
-              sx={{
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                borderRadius: 1,
-                p: 2.25,
-              }}
-            >
-              <Stack spacing={1.5}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  spacing={2}
-                  alignItems="center"
-                >
-                  <Chip
-                    label={t("dashboard.upcomingEventLabel", {
-                      defaultValue: "Upcoming event",
-                    })}
-                    size="small"
-                    variant="outlined"
-                  />
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {upcomingEvent.schedule}
-                  </Typography>
-                </Stack>
-                <Typography variant="h6">{upcomingEvent.title}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {upcomingEvent.description}
-                </Typography>
-                <Divider />
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <AccessTimeRoundedIcon fontSize="small" color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    {upcomingEvent.location}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Box>
-
-            <Stack spacing={0} divider={<Divider flexItem />} sx={{ flex: 1 }}>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{ pb: 1.5 }}
-              >
-                <SchoolRoundedIcon color="action" fontSize="small" />
-                <Typography variant="subtitle1">
-                  {t("dashboard.upcomingTrainingLabel", {
-                    defaultValue: "Upcoming trainings",
-                  })}
-                </Typography>
-              </Stack>
-
-              {upcomingTrainings.map((item) => (
-                <Stack
-                  key={item.id}
-                  direction="row"
-                  spacing={1.5}
-                  alignItems="flex-start"
-                  sx={{ py: 1.75 }}
-                >
-                  <Box sx={{ width: 86, flexShrink: 0 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {item.schedule}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography variant="subtitle2">{item.title}</Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      {item.description}
-                    </Typography>
-                  </Box>
-                </Stack>
-              ))}
-            </Stack>
-          </SectionCard>
-        ),
-      },
-      {
         id: "department-updates",
         managerLabel: t("dashboard.departmentUpdatesSectionTitle", {
           defaultValue: "Department Updates",
@@ -663,10 +1319,6 @@ export function DashboardPage() {
           <SectionCard
             title={t("dashboard.departmentUpdatesSectionTitle", {
               defaultValue: "Department Updates",
-            })}
-            subtitle={t("dashboard.departmentUpdatesSectionSubtitle", {
-              defaultValue:
-                "Company news, new employees, and internal department updates.",
             })}
             action={<CampaignRoundedIcon color="action" />}
             cardSx={dashboardCardSx}
@@ -716,7 +1368,11 @@ export function DashboardPage() {
                       alignItems="flex-start"
                     >
                       <Typography variant="subtitle2">{item.title}</Typography>
-                      <Chip label={item.badge} size="small" variant="outlined" />
+                      <Chip
+                        label={item.badge}
+                        size="small"
+                        variant="outlined"
+                      />
                     </Stack>
                     <Typography
                       variant="body2"
@@ -734,18 +1390,28 @@ export function DashboardPage() {
       },
     ],
     [
+      announcements,
       departmentUpdates,
+      favoriteApplications,
+      favoritesError,
+      favoritesLoading,
+      handleOpenApplication,
       handleNotificationClick,
       markNotificationAsRead,
+      markAllNotificationsAsRead,
       markingIds,
+      myTaskCount,
+      navigate,
       notifications,
       notificationsError,
       notificationsLoading,
+      quickAccessApplications,
       reloadNotifications,
       t,
-      upcomingEvent,
-      upcomingTrainings,
       userInfoItems,
+      workflowStats.inProgressRequests,
+      workflowStats.loading,
+      workflowStats.pendingApprovals,
     ],
   );
 
@@ -756,7 +1422,10 @@ export function DashboardPage() {
 
   const orderedSectionIds = useMemo(
     () =>
-      normalizeDashboardSectionOrder(settings.dashboardSectionOrder, sectionIds),
+      normalizeDashboardSectionOrder(
+        settings.dashboardSectionOrder,
+        sectionIds,
+      ),
     [sectionIds, settings.dashboardSectionOrder],
   );
 
@@ -772,7 +1441,9 @@ export function DashboardPage() {
 
   const sectionsById = useMemo(
     () =>
-      Object.fromEntries(sectionDefinitions.map((section) => [section.id, section])),
+      Object.fromEntries(
+        sectionDefinitions.map((section) => [section.id, section]),
+      ),
     [sectionDefinitions],
   );
 
@@ -838,131 +1509,27 @@ export function DashboardPage() {
 
   return (
     <Stack spacing={3.5}>
-      <PageHeader
-        breadcrumbs={breadcrumbs}
-        title={t("dashboard.title")}
-        subtitle={t("dashboard.subtitle")}
-      />
+      <DashboardWelcomeHeader user={auth.user} now={currentDateTime} />
 
-      <Box
-        sx={{
-          border: (theme) => `1px dashed ${theme.palette.divider}`,
-          borderRadius: 1,
-          px: { xs: 2, md: 2.5 },
-          py: 2,
-        }}
-      >
-        <Stack
-          direction={{ xs: "column", xl: "row" }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: "stretch", xl: "center" }}
-        >
-          <Stack spacing={0.75}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <DragIndicatorRoundedIcon color="primary" fontSize="small" />
-              <Typography variant="subtitle1">
-                {t("dashboard.sectionManagerTitle", {
-                  defaultValue: "Customize sections",
-                })}
-              </Typography>
-            </Stack>
-            <Typography variant="body2" color="text.secondary">
-              {t("dashboard.sectionManagerDescription", {
-                defaultValue:
-                  "Drag cards to change their order. Click a chip to hide or show a section.",
-              })}
-            </Typography>
-          </Stack>
-
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1,
-              alignItems: "stretch",
-              width: "100%",
-              justifyContent: { xs: "stretch", xl: "flex-end" },
-            }}
-          >
-            {orderedSectionIds.map((sectionId) => {
-              const section = sectionsById[sectionId];
-
-              if (!section) {
-                return null;
-              }
-
-              const hidden = hiddenSectionIdSet.has(sectionId);
-
-              return (
-                <Chip
-                  key={section.id}
-                  icon={
-                    hidden ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />
-                  }
-                  label={section.managerLabel}
-                  onClick={() => handleToggleSectionVisibility(section.id)}
-                  variant={hidden ? "outlined" : "filled"}
-                  color={hidden ? "default" : "primary"}
-                  sx={{
-                    opacity: hidden ? 0.8 : 1,
-                    height: { xs: "auto", sm: 36 },
-                    minHeight: 32,
-                    width: { xs: "100%", sm: "auto" },
-                    minWidth: { sm: 160 },
-                    maxWidth: { xs: "100%", sm: 220, xl: 240 },
-                    justifyContent: { xs: "flex-start", sm: "center" },
-                    borderRadius: 999,
-                    "& .MuiChip-icon": {
-                      ml: 1,
-                      mr: { xs: 0.75, sm: 0.5 },
-                    },
-                    "& .MuiChip-label": {
-                      display: "block",
-                      whiteSpace: { xs: "normal", sm: "nowrap" },
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      overflowWrap: { xs: "anywhere", sm: "normal" },
-                      lineHeight: { xs: 1.3, sm: "32px" },
-                      py: { xs: 0.75, sm: 0 },
-                      px: { xs: 0.5, sm: 0.75 },
-                    },
-                  }}
-                />
-              );
-            })}
-
-            {hiddenSectionIds.length ? (
-              <Button
-                size="small"
-                onClick={handleShowAllSections}
-                sx={{
-                  width: { xs: "100%", sm: "auto" },
-                  alignSelf: "stretch",
-                }}
-              >
-                {t("dashboard.showAllSectionsAction", {
-                  defaultValue: "Show all sections",
-                })}
-              </Button>
-            ) : null}
-          </Box>
-        </Stack>
-      </Box>
-
-      {visibleSections.length ? (
+      <Stack spacing={3}>
+        {workflowStats.error ? (
+          <Alert severity="warning">{workflowStats.error}</Alert>
+        ) : null}
         <Box
           sx={{
-            display: "grid",
-            gap: 3,
-            gridTemplateColumns: { xs: "1fr", lg: "repeat(3, minmax(0, 1fr))" },
-            alignItems: "stretch",
+            columnCount: { xs: 1, lg: 2 },
+            columnGap: 2,
+            "& > *": {
+              breakInside: "avoid",
+              mb: 2,
+            },
           }}
         >
           {visibleSections.map((section) => {
             const isDragging = draggedSectionId === section.id;
             const isDropTarget =
-              dragOverSectionId === section.id && draggedSectionId !== section.id;
+              dragOverSectionId === section.id &&
+              draggedSectionId !== section.id;
 
             return (
               <Box
@@ -976,9 +1543,6 @@ export function DashboardPage() {
                   minWidth: 0,
                   cursor: "grab",
                   borderRadius: 1,
-                  gridColumn: section.fullWidth
-                    ? { xs: "auto", lg: "1 / -1" }
-                    : "auto",
                   opacity: isDragging ? 0.55 : 1,
                   outline: isDropTarget
                     ? (theme) => `2px dashed ${theme.palette.primary.main}`
@@ -993,39 +1557,151 @@ export function DashboardPage() {
             );
           })}
         </Box>
-      ) : (
+
+        {!visibleSections.length ? (
+          <Box
+            sx={{
+              border: (theme) => `1px dashed ${theme.palette.divider}`,
+              borderRadius: 1,
+              p: 3,
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Typography variant="h6">
+                {t("dashboard.allSectionsHiddenTitle", {
+                  defaultValue: "All sections are hidden",
+                })}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t("dashboard.allSectionsHiddenDescription", {
+                  defaultValue:
+                    "Use the controls below to show the sections you want to keep on this dashboard.",
+                })}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                sx={{ alignSelf: "flex-start" }}
+                onClick={handleShowAllSections}
+              >
+                {t("dashboard.showAllSectionsAction", {
+                  defaultValue: "Show all sections",
+                })}
+              </Button>
+            </Stack>
+          </Box>
+        ) : null}
+
         <Box
           sx={{
             border: (theme) => `1px dashed ${theme.palette.divider}`,
             borderRadius: 1,
-            p: 3,
+            px: { xs: 2, md: 2.5 },
+            py: 2,
           }}
         >
-          <Stack spacing={1.5}>
-            <Typography variant="h6">
-              {t("dashboard.allSectionsHiddenTitle", {
-                defaultValue: "All sections are hidden",
-              })}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t("dashboard.allSectionsHiddenDescription", {
-                defaultValue:
-                  "Use the controls above to show the sections you want to keep on this dashboard.",
-              })}
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              sx={{ alignSelf: "flex-start" }}
-              onClick={handleShowAllSections}
+          <Stack
+            direction={{ xs: "column", xl: "row" }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={{ xs: "stretch", xl: "center" }}
+          >
+            <Stack spacing={0.75}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <DragIndicatorRoundedIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle1">
+                  {t("dashboard.sectionManagerTitle", {
+                    defaultValue: "Customize sections",
+                  })}
+                </Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                {t("dashboard.sectionManagerDescription", {
+                  defaultValue:
+                    "Drag cards to change their order. Click a chip to hide or show a section.",
+                })}
+              </Typography>
+            </Stack>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                alignItems: "stretch",
+                width: "100%",
+                justifyContent: { xs: "stretch", xl: "flex-end" },
+              }}
             >
-              {t("dashboard.showAllSectionsAction", {
-                defaultValue: "Show all sections",
+              {orderedSectionIds.map((sectionId) => {
+                const section = sectionsById[sectionId];
+
+                if (!section) {
+                  return null;
+                }
+
+                const hidden = hiddenSectionIdSet.has(sectionId);
+
+                return (
+                  <Chip
+                    key={section.id}
+                    icon={
+                      hidden ? (
+                        <VisibilityOffRoundedIcon />
+                      ) : (
+                        <VisibilityRoundedIcon />
+                      )
+                    }
+                    label={section.managerLabel}
+                    onClick={() => handleToggleSectionVisibility(section.id)}
+                    variant={hidden ? "outlined" : "filled"}
+                    color={hidden ? "default" : "primary"}
+                    sx={{
+                      opacity: hidden ? 0.8 : 1,
+                      height: { xs: "auto", sm: 36 },
+                      minHeight: 32,
+                      width: { xs: "100%", sm: "auto" },
+                      minWidth: { sm: 160 },
+                      maxWidth: { xs: "100%", sm: 220, xl: 240 },
+                      justifyContent: { xs: "flex-start", sm: "center" },
+                      borderRadius: 999,
+                      "& .MuiChip-icon": {
+                        ml: 1,
+                        mr: { xs: 0.75, sm: 0.5 },
+                      },
+                      "& .MuiChip-label": {
+                        display: "block",
+                        whiteSpace: { xs: "normal", sm: "nowrap" },
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        overflowWrap: { xs: "anywhere", sm: "normal" },
+                        lineHeight: { xs: 1.3, sm: "32px" },
+                        py: { xs: 0.75, sm: 0 },
+                        px: { xs: 0.5, sm: 0.75 },
+                      },
+                    }}
+                  />
+                );
               })}
-            </Button>
+
+              {hiddenSectionIds.length ? (
+                <Button
+                  size="small"
+                  onClick={handleShowAllSections}
+                  sx={{
+                    width: { xs: "100%", sm: "auto" },
+                    alignSelf: "stretch",
+                  }}
+                >
+                  {t("dashboard.showAllSectionsAction", {
+                    defaultValue: "Show all sections",
+                  })}
+                </Button>
+              ) : null}
+            </Box>
           </Stack>
         </Box>
-      )}
+      </Stack>
     </Stack>
   );
 }

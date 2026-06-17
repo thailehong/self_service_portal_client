@@ -209,29 +209,42 @@ function RequestDetailDialog({ open, detail, workflows, workflowDetail, loading,
 }
 
 function WorkflowVersionTimeline({ versions = [], activeVersionId, configSubmitting, onAction }) {
+  const pageSize = 5;
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setPage(0);
+  }, [versions.length]);
+
   if (!versions.length) {
     return <Alert severity="info" variant="outlined">No version history yet.</Alert>;
   }
 
+  const pageCount = Math.max(1, Math.ceil(versions.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const visibleVersions = versions.slice(safePage * pageSize, safePage * pageSize + pageSize);
+
   const buildEvents = (version) => [
     { label: "Changed", actor: version.modifiedBy || version.createdBy, at: version.modifiedAt || version.createdAt },
     version.submittedAt ? { label: "Submitted", actor: version.submittedBy, at: version.submittedAt } : null,
+    version.approvalAssignedAt ? { label: "Assigned approver", actor: version.approvalAssignedTo, at: version.approvalAssignedAt } : null,
     version.approvedAt ? { label: "Approved", actor: version.approvedBy, at: version.approvedAt } : null,
     version.rejectedAt ? { label: "Rejected", actor: version.rejectedBy, at: version.rejectedAt } : null,
   ].filter(Boolean);
 
   return (
     <Stack spacing={1}>
-      {versions.map((version, index) => {
+      {visibleVersions.map((version, index) => {
         const isActive = String(activeVersionId || "") === String(version.id || "");
         const events = buildEvents(version);
+        const absoluteIndex = safePage * pageSize + index;
         return (
           <Box key={version.id} sx={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr)", columnGap: 1.25 }}>
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: isActive ? "success.main" : version.status === "Rejected" ? "error.main" : version.status === "PendingApproval" ? "warning.main" : "primary.main", mt: 1.25 }} />
-              {index < versions.length - 1 ? <Box sx={{ width: "1px", flex: 1, bgcolor: "rgba(0, 0, 0, 0.16)", minHeight: 64, mt: 0.75 }} /> : null}
+              {absoluteIndex < versions.length - 1 ? <Box sx={{ width: "1px", flex: 1, bgcolor: "rgba(0, 0, 0, 0.16)", minHeight: 64, mt: 0.75 }} /> : null}
             </Box>
-            <Box sx={{ pb: index < versions.length - 1 ? 3 : 0, minWidth: 0 }}>
+            <Box sx={{ pb: absoluteIndex < versions.length - 1 ? 3 : 0, minWidth: 0 }}>
               <Box sx={{ p: 1.5, borderRadius: 1, border: (theme) => `1px solid ${isActive ? theme.palette.success.main : theme.palette.divider}`, bgcolor: isActive ? "rgba(46, 125, 50, 0.08)" : "background.default" }}>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }} justifyContent="space-between">
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
@@ -239,7 +252,7 @@ function WorkflowVersionTimeline({ versions = [], activeVersionId, configSubmitt
                     <Chip label={version.status} size="small" color={version.status === "Approved" ? "success" : version.status === "PendingApproval" ? "warning" : version.status === "Rejected" ? "error" : "default"} />
                     {isActive ? <Chip label="Active" size="small" color="success" variant="outlined" /> : null}
                   </Stack>
-                  {version.status === "PendingApproval" ? (
+                  {version.status === "PendingApproval" && version.canApprove ? (
                     <Stack direction="row" spacing={1}>
                       <Button size="small" onClick={() => onAction(version, "Approve")} disabled={configSubmitting}>Approve</Button>
                       <Button size="small" color="error" onClick={() => onAction(version, "Reject")} disabled={configSubmitting}>Reject</Button>
@@ -266,6 +279,19 @@ function WorkflowVersionTimeline({ versions = [], activeVersionId, configSubmitt
           </Box>
         );
       })}
+      {versions.length > pageSize ? (
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ pt: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            {safePage * pageSize + 1}-{Math.min((safePage + 1) * pageSize, versions.length)} of {versions.length}
+          </Typography>
+          <Button size="small" variant="outlined" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={safePage <= 0}>
+            Previous
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} disabled={safePage >= pageCount - 1}>
+            Next
+          </Button>
+        </Stack>
+      ) : null}
     </Stack>
   );
 }
@@ -315,6 +341,7 @@ export function EWorkflowPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryTab = searchParams.get("tab");
   const queryRequestId = searchParams.get("requestId");
+  const queryWorkflowId = searchParams.get("workflowId");
   const initialTab = workflowTabs.includes(queryTab) ? queryTab : "start";
 
   const [tab, setTab] = useState(initialTab);
@@ -354,12 +381,15 @@ export function EWorkflowPage() {
   const [fieldSubmitError, setFieldSubmitError] = useState("");
   const [fieldDelete, setFieldDelete] = useState(null);
   const [permissionForm, setPermissionForm] = useState(initialPermissionForm);
+  const [editingPermission, setEditingPermission] = useState(null);
   const [permissionError, setPermissionError] = useState("");
   const [configSubmitting, setConfigSubmitting] = useState(false);
   const [permissionDelete, setPermissionDelete] = useState(null);
   const [groupForm, setGroupForm] = useState(initialGroupForm);
+  const [editingGroup, setEditingGroup] = useState(null);
   const [groupError, setGroupError] = useState("");
   const [transitionRuleForm, setTransitionRuleForm] = useState(initialTransitionRuleForm);
+  const [editingTransitionRule, setEditingTransitionRule] = useState(null);
   const [transitionError, setTransitionError] = useState("");
   const [versionComment, setVersionComment] = useState("");
 
@@ -382,8 +412,9 @@ export function EWorkflowPage() {
   const [reportError, setReportError] = useState("");
 
   const startWorkflows = workflows.filter((workflow) => workflow.isActive && workflow.access.canSubmit && workflow.currentApprovedVersionId);
-  const designerWorkflows = workflows.filter((workflow) => workflow.access.canManage);
+  const designerWorkflows = workflows.filter((workflow) => workflow.access.canManage || workflow.access.canApproveVersion);
   const reportWorkflows = workflows.filter((workflow) => workflow.access.canReport);
+  const canManageDesigner = Boolean(designerDetail?.access?.canManage);
   const startSteps = useMemo(() => getFirstOrderSteps(startDetail?.steps || []), [startDetail]);
   const startFields = useMemo(() => getFirstOrderFields(startDetail?.steps || []).filter(isVisibleInputField), [startDetail]);
   const activeStartFields = useMemo(() => getActiveInputFields(startFields, requestValues), [startFields, requestValues]);
@@ -483,6 +514,22 @@ export function EWorkflowPage() {
       setTab(queryTab);
     }
   }, [queryTab]);
+
+  useEffect(() => {
+    if (queryTab === "designer" && queryWorkflowId && String(designerWorkflowId || "") !== String(queryWorkflowId)) {
+      setDesignerWorkflowId(queryWorkflowId);
+      void loadDesignerDetail(queryWorkflowId);
+    }
+  }, [queryTab, queryWorkflowId, designerWorkflowId]);
+
+  useEffect(() => {
+    setEditingPermission(null);
+    setPermissionForm(initialPermissionForm);
+    setEditingGroup(null);
+    setGroupForm(initialGroupForm);
+    setEditingTransitionRule(null);
+    setTransitionRuleForm(initialTransitionRuleForm);
+  }, [designerWorkflowId]);
 
   const handleTabChange = (_, value) => {
     setTab(value);
@@ -662,6 +709,13 @@ export function EWorkflowPage() {
       }
       setRequestTitle("");
       setEditingRequest(null);
+      if (startDetail) {
+        setRequestValues(
+          getFirstOrderFields(startDetail.steps).filter(isVisibleInputField)
+            .reduce((values, field) => ({ ...values, [field.id]: getFieldInitialValue(field) }), {}),
+        );
+      }
+      await loadMyRequests();
     } catch (error) {
       setStartError(getErrorMessage(error, "Could not create workflow request."));
     } finally {
@@ -1036,9 +1090,14 @@ export function EWorkflowPage() {
     setPermissionError("");
 
     try {
-      await workflowApi.assignPermission(designerWorkflowId, permissionForm);
+      if (editingPermission) {
+        await workflowApi.updatePermission(editingPermission.id, permissionForm);
+      } else {
+        await workflowApi.assignPermission(designerWorkflowId, permissionForm);
+      }
       setPermissionForm(initialPermissionForm);
-      notify({ message: "Permission assigned.", severity: "success" });
+      setEditingPermission(null);
+      notify({ message: editingPermission ? "Permission updated." : "Permission assigned.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
       await refreshStartDetailIfSameWorkflow(designerWorkflowId);
     } catch (error) {
@@ -1058,6 +1117,9 @@ export function EWorkflowPage() {
     try {
       await workflowApi.removePermission(permissionDelete.id);
       setPermissionDelete(null);
+      if (editingPermission && String(editingPermission.id) === String(permissionDelete.id)) {
+        cancelEditPermission();
+      }
       notify({ message: "Permission removed.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
       await refreshStartDetailIfSameWorkflow(designerWorkflowId);
@@ -1068,7 +1130,23 @@ export function EWorkflowPage() {
     }
   };
 
-  const handleCreateGroup = async (event) => {
+  const openEditPermission = (permission) => {
+    setEditingPermission(permission);
+    setPermissionError("");
+    setPermissionForm({
+      principalType: permission.principalType || "User",
+      principalValue: permission.principalValue || "",
+      permission: permission.permission || "User",
+    });
+  };
+
+  const cancelEditPermission = () => {
+    setEditingPermission(null);
+    setPermissionForm(initialPermissionForm);
+    setPermissionError("");
+  };
+
+  const handleSaveGroup = async (event) => {
     event.preventDefault();
     if (!groupForm.groupCode.trim() || !groupForm.groupName.trim()) {
       setGroupError("Group code and name are required.");
@@ -1078,9 +1156,14 @@ export function EWorkflowPage() {
     setConfigSubmitting(true);
     setGroupError("");
     try {
-      await workflowApi.createGroup(designerWorkflowId, groupForm);
+      if (editingGroup) {
+        await workflowApi.updateGroup(editingGroup.id, groupForm);
+      } else {
+        await workflowApi.createGroup(designerWorkflowId, groupForm);
+      }
       setGroupForm(initialGroupForm);
-      notify({ message: "Group saved.", severity: "success" });
+      setEditingGroup(null);
+      notify({ message: editingGroup ? "Group updated." : "Group saved.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
     } catch (error) {
       setGroupError(getErrorMessage(error, "Could not save group."));
@@ -1089,11 +1172,32 @@ export function EWorkflowPage() {
     }
   };
 
+  const openEditGroup = (group) => {
+    setEditingGroup(group);
+    setGroupError("");
+    setGroupForm({
+      groupCode: group.groupCode || "",
+      groupName: group.groupName || "",
+      description: group.description || "",
+      isActive: group.isActive !== false,
+      members: (group.members || []).map((member) => member.actor).filter(Boolean).join("; "),
+    });
+  };
+
+  const cancelEditGroup = () => {
+    setEditingGroup(null);
+    setGroupForm(initialGroupForm);
+    setGroupError("");
+  };
+
   const handleDeleteGroup = async (group) => {
     setConfigSubmitting(true);
     setGroupError("");
     try {
       await workflowApi.deleteGroup(group.id);
+      if (editingGroup && String(editingGroup.id) === String(group.id)) {
+        cancelEditGroup();
+      }
       notify({ message: "Group deleted.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
     } catch (error) {
@@ -1103,7 +1207,7 @@ export function EWorkflowPage() {
     }
   };
 
-  const handleCreateTransitionRule = async (event) => {
+  const handleSaveTransitionRule = async (event) => {
     event.preventDefault();
     if (!transitionRuleForm.fromStepId) {
       setTransitionError("From step is required.");
@@ -1117,9 +1221,14 @@ export function EWorkflowPage() {
     setConfigSubmitting(true);
     setTransitionError("");
     try {
-      await workflowApi.createTransitionRule(designerWorkflowId, transitionRuleForm);
+      if (editingTransitionRule) {
+        await workflowApi.updateTransitionRule(editingTransitionRule.id, transitionRuleForm);
+      } else {
+        await workflowApi.createTransitionRule(designerWorkflowId, transitionRuleForm);
+      }
       setTransitionRuleForm(initialTransitionRuleForm);
-      notify({ message: "Transition rule saved.", severity: "success" });
+      setEditingTransitionRule(null);
+      notify({ message: editingTransitionRule ? "Transition rule updated." : "Transition rule saved.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
     } catch (error) {
       setTransitionError(getErrorMessage(error, "Could not save transition rule."));
@@ -1128,11 +1237,35 @@ export function EWorkflowPage() {
     }
   };
 
+  const openEditTransitionRule = (rule) => {
+    setEditingTransitionRule(rule);
+    setTransitionError("");
+    setTransitionRuleForm({
+      fromStepId: rule.fromStepId || "",
+      action: rule.action || "Approve",
+      targetType: rule.targetType || "NextStep",
+      targetStepId: rule.targetStepId || "",
+      conditionJson: rule.conditionJson || "",
+      priority: rule.priority ?? 0,
+      isDefault: Boolean(rule.isDefault),
+      isActive: rule.isActive !== false,
+    });
+  };
+
+  const cancelEditTransitionRule = () => {
+    setEditingTransitionRule(null);
+    setTransitionRuleForm(initialTransitionRuleForm);
+    setTransitionError("");
+  };
+
   const handleDeleteTransitionRule = async (rule) => {
     setConfigSubmitting(true);
     setTransitionError("");
     try {
       await workflowApi.deleteTransitionRule(rule.id);
+      if (editingTransitionRule && String(editingTransitionRule.id) === String(rule.id)) {
+        cancelEditTransitionRule();
+      }
       notify({ message: "Transition rule deleted.", severity: "success" });
       await loadDesignerDetail(designerWorkflowId);
     } catch (error) {
@@ -1379,6 +1512,7 @@ export function EWorkflowPage() {
       <PageHeader
         breadcrumbs={[
           { label: t("dashboard.breadcrumbs.root"), to: "/dashboard" },
+          { label: "Self Service", to: "/dashboard/self-service" },
           { label: "eWorkflow" },
         ]}
         title="eWorkflow"
@@ -1560,7 +1694,9 @@ export function EWorkflowPage() {
             action={
               <Stack direction="row" spacing={1}>
                 <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={() => void loadTabData("designer")} disabled={workflowsLoading || designerLoading}>Refresh</Button>
-                <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={() => openWorkflowDialog("create")}>New workflow</Button>
+                {workflows.some((workflow) => workflow.access.canManage) ? (
+                  <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={() => openWorkflowDialog("create")}>New workflow</Button>
+                ) : null}
               </Stack>
             }
           >
@@ -1570,8 +1706,8 @@ export function EWorkflowPage() {
               loading={workflowsLoading}
               defaultRowsPerPage={5}
               searchPlaceholder="Search workflows"
-              emptyTitle="No manageable workflows"
-              emptyDescription="You need Owner permission or administrator access to design workflows."
+              emptyTitle="No workflow approvals"
+              emptyDescription="Workflows you can manage or approve will appear here."
             />
           </SectionCard>
 
@@ -1581,7 +1717,7 @@ export function EWorkflowPage() {
               title={designerDetail.workflow.name}
               subtitle={`${designerDetail.workflow.code} · ${designerDetail.workflow.isActive ? "Active" : "Inactive"}`}
               cardSx={{ borderRadius: 0 }}
-              action={<Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => openStepDialog("create")}>Add step</Button>}
+              action={canManageDesigner ? <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => openStepDialog("create")}>Add step</Button> : null}
             >
               <Stack spacing={3}>
                 {designerLoading ? <Alert severity="info" variant="outlined">Loading configuration...</Alert> : null}
@@ -1597,11 +1733,13 @@ export function EWorkflowPage() {
                               {step.stepCode} · order {step.stepOrder} · {step.approverType}: {step.approverValue}
                             </Typography>
                           </Stack>
-                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                            <Button size="small" startIcon={<EditRoundedIcon />} onClick={() => openStepDialog("edit", step)}>Edit step</Button>
-                            <Button size="small" startIcon={<AddRoundedIcon />} onClick={() => openFieldDialog("create", step)}>Add field</Button>
-                            <Button size="small" color="error" startIcon={<DeleteOutlineRoundedIcon />} onClick={() => setStepDelete(step)} disabled={configSubmitting}>Delete step</Button>
-                          </Stack>
+                          {canManageDesigner ? (
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                              <Button size="small" startIcon={<EditRoundedIcon />} onClick={() => openStepDialog("edit", step)}>Edit step</Button>
+                              <Button size="small" startIcon={<AddRoundedIcon />} onClick={() => openFieldDialog("create", step)}>Add field</Button>
+                              <Button size="small" color="error" startIcon={<DeleteOutlineRoundedIcon />} onClick={() => setStepDelete(step)} disabled={configSubmitting}>Delete step</Button>
+                            </Stack>
+                          ) : null}
                         </Stack>
                         {step.fields.length ? (
                           <Box sx={{ display: "grid", gap: 1.25, gridTemplateColumns: "1fr" }}>
@@ -1613,7 +1751,8 @@ export function EWorkflowPage() {
                                 </Stack>
                                 <Chip label={field.dataType} size="small" variant="outlined" />
                                 <Chip label={field.isRequired ? "Required" : "Optional"} size="small" color={field.isRequired ? "warning" : "default"} />
-                                <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
+                                {canManageDesigner ? (
+                                  <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
                                   {field.dataType === "file" ? (
                                     <Tooltip title="Upload Excel template">
                                       <IconButton size="small" color="secondary" component="label" disabled={configSubmitting}>
@@ -1647,7 +1786,8 @@ export function EWorkflowPage() {
                                       <DeleteOutlineRoundedIcon fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
-                                </Stack>
+                                  </Stack>
+                                ) : null}
                               </Box>
                             ))}
                           </Box>
@@ -1659,11 +1799,22 @@ export function EWorkflowPage() {
                   )) : <Alert severity="info" variant="outlined">No steps configured yet.</Alert>}
                 </Stack>
 
+                {canManageDesigner ? (
+                  <>
                 <Divider />
 
                 <Stack spacing={2}>
                   <Typography variant="h6">Permissions</Typography>
                   {permissionError ? <Alert severity="error" variant="outlined">{permissionError}</Alert> : null}
+                  {editingPermission ? (
+                    <Alert
+                      severity="info"
+                      variant="outlined"
+                      action={<Button size="small" color="inherit" onClick={cancelEditPermission}>Cancel edit</Button>}
+                    >
+                      Editing permission for {editingPermission.principalValue}.
+                    </Alert>
+                  ) : null}
                   <Box component="form" onSubmit={handleAssignPermission} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "180px minmax(260px, 1fr) 180px auto" }, alignItems: "start" }}>
                     <FormControl fullWidth>
                       <InputLabel>Principal type</InputLabel>
@@ -1684,7 +1835,9 @@ export function EWorkflowPage() {
                         {permissions.map((permission) => <MenuItem key={permission} value={permission}>{permission}</MenuItem>)}
                       </Select>
                     </FormControl>
-                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56, whiteSpace: "nowrap" }}>Assign</Button>
+                    <Button type="submit" variant="contained" startIcon={editingPermission ? <SaveRoundedIcon /> : <AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56, whiteSpace: "nowrap" }}>
+                      {editingPermission ? "Update" : "Assign"}
+                    </Button>
                   </Box>
                   <Box sx={{ display: "grid", gap: 1 }}>
                     {designerDetail.permissions.map((permission) => (
@@ -1692,11 +1845,18 @@ export function EWorkflowPage() {
                         <Chip label={permission.principalType} size="small" variant="outlined" />
                         <Typography variant="body2">{permission.principalValue}</Typography>
                         <Chip label={permission.permission} size="small" color={permission.permission === "Owner" ? "primary" : "default"} />
-                        <Tooltip title="Remove permission">
-                          <IconButton size="small" color="error" onClick={() => setPermissionDelete(permission)} sx={{ justifySelf: { md: "end" } }}>
-                            <DeleteOutlineRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
+                          <Tooltip title="Edit permission">
+                            <IconButton size="small" color="primary" onClick={() => openEditPermission(permission)} disabled={configSubmitting}>
+                              <EditRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Remove permission">
+                            <IconButton size="small" color="error" onClick={() => setPermissionDelete(permission)} disabled={configSubmitting}>
+                              <DeleteOutlineRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </Box>
                     ))}
                   </Box>
@@ -1707,11 +1867,22 @@ export function EWorkflowPage() {
                 <Stack spacing={2}>
                   <Typography variant="h6">Groups</Typography>
                   {groupError ? <Alert severity="error" variant="outlined">{groupError}</Alert> : null}
-                  <Box component="form" onSubmit={handleCreateGroup} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "160px 220px minmax(280px, 1fr) auto" }, alignItems: "start" }}>
+                  {editingGroup ? (
+                    <Alert
+                      severity="info"
+                      variant="outlined"
+                      action={<Button size="small" color="inherit" onClick={cancelEditGroup}>Cancel edit</Button>}
+                    >
+                      Editing group {editingGroup.groupCode}.
+                    </Alert>
+                  ) : null}
+                  <Box component="form" onSubmit={handleSaveGroup} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "160px 220px minmax(280px, 1fr) auto" }, alignItems: "start" }}>
                     <TextField label="Code" value={groupForm.groupCode} onChange={(event) => setGroupForm((current) => ({ ...current, groupCode: event.target.value }))} required fullWidth />
                     <TextField label="Name" value={groupForm.groupName} onChange={(event) => setGroupForm((current) => ({ ...current, groupName: event.target.value }))} required fullWidth />
                     <TextField label="Members" value={groupForm.members} onChange={(event) => setGroupForm((current) => ({ ...current, members: event.target.value }))} helperText="Email/username separated by comma, semicolon, or new line." fullWidth />
-                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56, whiteSpace: "nowrap" }}>Save group</Button>
+                    <Button type="submit" variant="contained" startIcon={editingGroup ? <SaveRoundedIcon /> : <AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56, whiteSpace: "nowrap" }}>
+                      {editingGroup ? "Update group" : "Save group"}
+                    </Button>
                   </Box>
                   <Box sx={{ display: "grid", gap: 1 }}>
                     {(designerDetail.groups || []).map((group) => (
@@ -1719,11 +1890,18 @@ export function EWorkflowPage() {
                         <Chip label={group.groupCode} size="small" variant="outlined" />
                         <Typography variant="body2">{group.groupName}</Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>{group.members.map((member) => member.actor).join("; ") || "No members"}</Typography>
-                        <Tooltip title="Delete group">
-                          <IconButton size="small" color="error" onClick={() => handleDeleteGroup(group)} disabled={configSubmitting}>
-                            <DeleteOutlineRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
+                          <Tooltip title="Edit group">
+                            <IconButton size="small" color="primary" onClick={() => openEditGroup(group)} disabled={configSubmitting}>
+                              <EditRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete group">
+                            <IconButton size="small" color="error" onClick={() => handleDeleteGroup(group)} disabled={configSubmitting}>
+                              <DeleteOutlineRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </Box>
                     ))}
                   </Box>
@@ -1734,7 +1912,16 @@ export function EWorkflowPage() {
                 <Stack spacing={2}>
                   <Typography variant="h6">Transition rules</Typography>
                   {transitionError ? <Alert severity="error" variant="outlined">{transitionError}</Alert> : null}
-                  <Box component="form" onSubmit={handleCreateTransitionRule} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1.3fr 130px 150px 1.5fr 90px auto" }, alignItems: "start" }}>
+                  {editingTransitionRule ? (
+                    <Alert
+                      severity="info"
+                      variant="outlined"
+                      action={<Button size="small" color="inherit" onClick={cancelEditTransitionRule}>Cancel edit</Button>}
+                    >
+                      Editing transition rule #{editingTransitionRule.id}.
+                    </Alert>
+                  ) : null}
+                  <Box component="form" onSubmit={handleSaveTransitionRule} sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1.3fr 130px 150px 1.5fr 90px auto" }, alignItems: "start" }}>
                     <FormControl fullWidth>
                       <InputLabel>From step</InputLabel>
                       <Select label="From step" value={transitionRuleForm.fromStepId} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, fromStepId: event.target.value }))}>
@@ -1793,9 +1980,28 @@ export function EWorkflowPage() {
                       ) : null}
                     </FormControl>
                     <TextField label="Priority" type="number" value={transitionRuleForm.priority} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, priority: event.target.value }))} />
-                    <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56 }}>Add rule</Button>
+                    <Button type="submit" variant="contained" startIcon={editingTransitionRule ? <SaveRoundedIcon /> : <AddRoundedIcon />} disabled={configSubmitting} sx={{ minHeight: 56 }}>
+                      {editingTransitionRule ? "Update rule" : "Add rule"}
+                    </Button>
                   </Box>
-                  <TextField label="Condition JSON" value={transitionRuleForm.conditionJson} onChange={(event) => setTransitionRuleForm((current) => ({ ...current, conditionJson: event.target.value }))} multiline minRows={2} placeholder='{"fieldKey":"ProductGroup","operator":"equals","value":"A"}' />
+                  <TextField
+                    label="Condition JSON"
+                    value={transitionRuleForm.conditionJson}
+                    onChange={(event) => setTransitionRuleForm((current) => ({ ...current, conditionJson: event.target.value }))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Tab" && !transitionRuleForm.conditionJson?.trim()) {
+                        event.preventDefault();
+                        setTransitionRuleForm((current) => ({
+                          ...current,
+                          conditionJson: '{"fieldKey":"ProductGroup","operator":"equals","value":"A"}',
+                        }));
+                      }
+                    }}
+                    multiline
+                    minRows={2}
+                    placeholder='{"fieldKey":"ProductGroup","operator":"equals","value":"A"}'
+                    helperText="Press Tab while this field is empty to insert the condition JSON template."
+                  />
                   <Box sx={{ display: "grid", gap: 1 }}>
                     {(designerDetail.transitionRules || []).map((rule) => {
                       const fromStep = designerStepById.get(String(rule.fromStepId));
@@ -1817,25 +2023,36 @@ export function EWorkflowPage() {
                             ) : null}
                           </Box>
                           <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{rule.conditionJson || (rule.isDefault ? "Default" : "No condition")}</Typography>
-                          <Tooltip title="Delete transition rule">
-                            <IconButton size="small" color="error" onClick={() => handleDeleteTransitionRule(rule)} disabled={configSubmitting} sx={{ justifySelf: { md: "end" } }}>
-                              <DeleteOutlineRoundedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
+                            <Tooltip title="Edit transition rule">
+                              <IconButton size="small" color="primary" onClick={() => openEditTransitionRule(rule)} disabled={configSubmitting}>
+                                <EditRoundedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete transition rule">
+                              <IconButton size="small" color="error" onClick={() => handleDeleteTransitionRule(rule)} disabled={configSubmitting}>
+                                <DeleteOutlineRoundedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
                         </Box>
                       );
                     })}
                   </Box>
                 </Stack>
+                  </>
+                ) : null}
 
                 <Divider />
 
                 <Stack spacing={2}>
                   <Typography variant="h6">Versions & history</Typography>
                   <TextField label="Version comment" value={versionComment} onChange={(event) => setVersionComment(event.target.value)} multiline minRows={2} />
-                  <Stack direction="row" spacing={1}>
-                    <Button variant="contained" onClick={handleSubmitVersion} disabled={configSubmitting}>Submit draft version</Button>
-                  </Stack>
+                  {canManageDesigner ? (
+                    <Stack direction="row" spacing={1}>
+                      <Button variant="contained" onClick={handleSubmitVersion} disabled={configSubmitting}>Submit draft version</Button>
+                    </Stack>
+                  ) : null}
                   <WorkflowVersionTimeline
                     versions={designerDetail.versions || []}
                     activeVersionId={designerDetail.workflow?.currentApprovedVersionId}

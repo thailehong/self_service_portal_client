@@ -8,4 +8,7 @@ export const notificationsApi = {
   async markAsRead(id) {
     await apiClient.put(`/notifications/${id}/read`);
   },
+  async markAllAsRead() {
+    await apiClient.put('/notifications/read-all');
+  },
 };

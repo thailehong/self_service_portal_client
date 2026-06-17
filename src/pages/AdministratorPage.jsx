@@ -1008,16 +1008,6 @@ export function AdministratorPage() {
           { label: t("dashboard.breadcrumbs.root"), to: "/dashboard" },
           { label: "Administrator" },
         ]}
-        title="Administrator"
-        subtitle="Manage system-wide users, roles, and permission assignments."
-        actions={
-          <Chip
-            label="Access control"
-            color="primary"
-            variant="outlined"
-            icon={<SecurityRoundedIcon />}
-          />
-        }
       />
 
       <Box sx={{ borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>

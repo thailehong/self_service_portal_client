@@ -40,6 +40,7 @@ function normalizeAccess(source = {}) {
     canManage: Boolean(access.CanManage ?? access.canManage ?? source.CanManage ?? source.canManage),
     canReport: Boolean(access.CanReport ?? access.canReport ?? source.CanReport ?? source.canReport),
     canView: Boolean(access.CanView ?? access.canView ?? source.CanView ?? source.canView),
+    canApproveVersion: Boolean(access.CanApproveVersion ?? access.canApproveVersion ?? source.CanApproveVersion ?? source.canApproveVersion),
     isAdmin: Boolean(access.IsAdmin ?? access.isAdmin ?? source.IsAdmin ?? source.isAdmin),
   };
 }
@@ -181,11 +182,14 @@ export function normalizeVersion(version) {
     modifiedAt: version?.ModifiedAt ?? version?.modifiedAt ?? null,
     submittedBy: version?.SubmittedBy ?? version?.submittedBy ?? "",
     submittedAt: version?.SubmittedAt ?? version?.submittedAt ?? null,
+    approvalAssignedTo: version?.ApprovalAssignedTo ?? version?.approvalAssignedTo ?? "",
+    approvalAssignedAt: version?.ApprovalAssignedAt ?? version?.approvalAssignedAt ?? null,
     approvedBy: version?.ApprovedBy ?? version?.approvedBy ?? "",
     approvedAt: version?.ApprovedAt ?? version?.approvedAt ?? null,
     rejectedBy: version?.RejectedBy ?? version?.rejectedBy ?? "",
     rejectedAt: version?.RejectedAt ?? version?.rejectedAt ?? null,
     comment: version?.Comment ?? version?.comment ?? "",
+    canApprove: Boolean(version?.CanApprove ?? version?.canApprove),
   };
 }
 
@@ -215,6 +219,9 @@ export function normalizeInstance(instance) {
     title: instance?.Title ?? instance?.title ?? "",
     status: instance?.Status ?? instance?.status ?? "",
     currentStepOrder: Number(instance?.CurrentStepOrder ?? instance?.currentStepOrder ?? 0),
+    currentStepId: instance?.CurrentStepID ?? instance?.currentStepID ?? instance?.currentStepId ?? null,
+    currentStepCode: instance?.CurrentStepCode ?? instance?.currentStepCode ?? "",
+    currentStepName: instance?.CurrentStepName ?? instance?.currentStepName ?? "",
     createdWorkflowVersionId: instance?.CreatedWorkflowVersionID ?? instance?.createdWorkflowVersionID ?? instance?.createdWorkflowVersionId ?? null,
     workflowVersionNo: instance?.WorkflowVersionNo ?? instance?.workflowVersionNo ?? null,
     workflowVersionStatus: instance?.WorkflowVersionStatus ?? instance?.workflowVersionStatus ?? "",
@@ -504,6 +511,15 @@ export const workflowApi = {
 
   async assignPermission(workflowId, payload) {
     const { data } = await apiClient.post(`${workflowBasePath}/${encodeURIComponent(workflowId)}/permissions`, {
+      PrincipalType: payload.principalType,
+      PrincipalValue: payload.principalValue.trim(),
+      Permission: payload.permission,
+    });
+    return normalizePermission(unwrapEntity(data));
+  },
+
+  async updatePermission(permissionId, payload) {
+    const { data } = await apiClient.put(`${workflowBasePath}/permissions/${encodeURIComponent(permissionId)}`, {
       PrincipalType: payload.principalType,
       PrincipalValue: payload.principalValue.trim(),
       Permission: payload.permission,

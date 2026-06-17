@@ -1,13 +1,21 @@
-﻿import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
+import { NavLink } from "react-router-dom";
 import appLogo from "../../assets/coherent.png";
 
 export function AppLogo({ compact = false }) {
   return (
-    <Stack direction="row" spacing={1.5} alignItems="center">
+    <Stack
+      component={NavLink}
+      to="/"
+      direction="row"
+      spacing={1.5}
+      alignItems="center"
+      sx={{ color: "inherit", textDecoration: "none" }}
+    >
       <Box
         component="img"
         src={appLogo}
-        alt="Employee Portal logo"
+        alt="DMS Portal logo"
         sx={{
           width: compact ? 34 : 42,
           height: compact ? 34 : 42,
@@ -22,7 +30,7 @@ export function AppLogo({ compact = false }) {
             variant="subtitle1"
             sx={{ fontWeight: 800, lineHeight: 1.1 }}
           >
-            Self Service Portal
+            DMS Portal
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Coherent Corp.

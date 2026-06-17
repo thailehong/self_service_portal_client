@@ -68,7 +68,7 @@ export function DashboardLayout({ children }) {
         <Stack direction="row" spacing={2} alignItems="center">
           <Avatar sx={{ bgcolor: 'primary.main', width: 52, height: 52 }}>{initials}</Avatar>
           <Box>
-            <Typography variant="h6">Employee Portal</Typography>
+            <Typography variant="h6">DMS Portal</Typography>
             <Typography variant="body2" color="text.secondary">
               Security-first workspace
             </Typography>

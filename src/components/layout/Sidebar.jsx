@@ -21,6 +21,7 @@ import {
   getNavigationLabel,
   getSidebarNavigationForUser,
 } from "../../app/navigation";
+import { openExternalApplication } from "../../app/appRegistry";
 import { selectAuth } from "../../features/auth/authSlice";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { AppLogo } from "../common/AppLogo";
@@ -93,6 +94,16 @@ export function Sidebar({ collapsed = false }) {
     }));
   };
 
+  const handleNavigationClick = (item, afterClick) => (event) => {
+    if (item.type !== "external") {
+      return;
+    }
+
+    event.preventDefault();
+    openExternalApplication(item.href);
+    afterClick?.();
+  };
+
   const closeFlyout = () => {
     setFlyout({ anchorEl: null, itemId: null });
   };
@@ -127,7 +138,7 @@ export function Sidebar({ collapsed = false }) {
               onClick={
                 item.children?.length
                   ? (event) => handleGroupClick(event, item)
-                  : undefined
+                  : handleNavigationClick(item)
               }
               sx={{
                 width: "100%",
@@ -220,12 +231,15 @@ export function Sidebar({ collapsed = false }) {
               {item.children?.length && !collapsed ? (
                 <Collapse in={expanded} timeout="auto" unmountOnExit>
                   <List disablePadding sx={{ mb: 1 }}>
-                    {item.children.map((child) => (
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon || FiberManualRecordRoundedIcon;
+                      return (
                       <ListItemButton
                         key={child.id}
-                        component={NavLink}
-                        to={child.to}
+                        component={child.type === "external" ? "button" : NavLink}
+                        to={child.type === "external" ? undefined : child.to}
                         end
+                        onClick={handleNavigationClick(child)}
                         sx={{
                           minHeight: 40,
                           ml: 1,
@@ -246,14 +260,15 @@ export function Sidebar({ collapsed = false }) {
                         <ListItemIcon
                           sx={{ minWidth: 24, color: "text.disabled" }}
                         >
-                          <FiberManualRecordRoundedIcon sx={{ fontSize: 10 }} />
+                          <ChildIcon sx={{ fontSize: child.icon ? 18 : 10 }} />
                         </ListItemIcon>
                         <ListItemText
                           primary={getNavigationLabel(child, t)}
                           primaryTypographyProps={{ variant: "body2" }}
                         />
                       </ListItemButton>
-                    ))}
+                      );
+                    })}
                   </List>
                 </Collapse>
               ) : null}
@@ -285,13 +300,19 @@ export function Sidebar({ collapsed = false }) {
               {getNavigationLabel(activeFlyoutItem, t)}
             </Typography>
             <List disablePadding>
-              {activeFlyoutItem.children?.map((child) => (
+              {activeFlyoutItem.children?.map((child) => {
+                const ChildIcon = child.icon;
+                return (
                 <ListItemButton
                   key={child.id}
-                  component={NavLink}
-                  to={child.to}
+                  component={child.type === "external" ? "button" : NavLink}
+                  to={child.type === "external" ? undefined : child.to}
                   end
-                  onClick={closeFlyout}
+                  onClick={
+                    child.type === "external"
+                      ? handleNavigationClick(child, closeFlyout)
+                      : closeFlyout
+                  }
                   sx={{
                     borderRadius: 3,
                     mb: 0.5,
@@ -302,12 +323,18 @@ export function Sidebar({ collapsed = false }) {
                     },
                   }}
                 >
+                  {ChildIcon ? (
+                    <ListItemIcon sx={{ minWidth: 32, color: "text.secondary" }}>
+                      <ChildIcon fontSize="small" />
+                    </ListItemIcon>
+                  ) : null}
                   <ListItemText
                     primary={getNavigationLabel(child, t)}
                     primaryTypographyProps={{ variant: "body2" }}
                   />
                 </ListItemButton>
-              ))}
+                );
+              })}
             </List>
           </Box>
         ) : null}

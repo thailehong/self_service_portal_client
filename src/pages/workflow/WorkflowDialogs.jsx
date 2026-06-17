@@ -284,20 +284,24 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
   const [localForm, setLocalForm] = useState(form || initialFieldForm);
   const optionEnabled = localForm.dataType === "select" || localForm.dataType === "multi-select";
   const optionSource = localForm.optionSourceType || "Static";
-  const validationPlaceholder = localForm.dataType === "table"
+  const validationPlaceholder = localForm.dataType === "stored-procedure"
+    ? storedProcedureValidationTemplate
+    : localForm.dataType === "table"
     ? tableValidationTemplate
     : optionEnabled && optionSource === "StoredProcedure"
       ? optionStoredProcedureTemplate
       : optionEnabled && optionSource === "SqlQuery"
         ? optionSqlQueryTemplate
         : conditionalValidationTemplate;
-  const validationHelperText = localForm.dataType === "table"
+  const validationHelperText = localForm.dataType === "stored-procedure"
+    ? "Press Tab while this field is empty to insert the stored procedure JSON template."
+    : localForm.dataType === "table"
     ? "Define table columns here. Supported column dataType values: text, number, date, datetime, boolean, select, multi-select, userpicker."
     : optionEnabled && optionSource === "StoredProcedure"
       ? "Stored procedure must return columns named Value and Label. parameters[].sourceFieldKey uses another field key; value/defaultValue are constants."
       : optionEnabled && optionSource === "SqlQuery"
         ? "SQL query must be read-only SELECT/WITH and return Value and Label columns. Use sourceFieldKey to bind a parameter to another field key."
-        : "Use visibleWhen/showWhen to control visibility and requiredWhen to make this field required only when another field has a matching value.";
+        : "Press Tab while this field is empty to insert the JSON template. Use visibleWhen/showWhen to control visibility and requiredWhen to make this field required only when another field has a matching value.";
 
   useEffect(() => {
     if (open) {
@@ -374,6 +378,12 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
             label="Validation JSON"
             value={localForm.validationJson}
             onChange={(event) => setLocalForm((current) => ({ ...current, validationJson: event.target.value }))}
+            onKeyDown={(event) => {
+              if (event.key === "Tab" && !localForm.validationJson?.trim() && validationPlaceholder) {
+                event.preventDefault();
+                setLocalForm((current) => ({ ...current, validationJson: validationPlaceholder }));
+              }
+            }}
             placeholder={validationPlaceholder}
             helperText={validationHelperText}
             minRows={2}

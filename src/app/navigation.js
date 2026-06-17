@@ -1,53 +1,32 @@
-import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
-import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
-import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import HelpCenterRoundedIcon from "@mui/icons-material/HelpCenterRounded";
-import AdminPanelSettingsRoundedIcon from "@mui/icons-material/AdminPanelSettingsRounded";
-import AccountTreeRoundedIcon from "@mui/icons-material/AccountTreeRounded";
-import { ADMINISTRATOR_ROLE_IDS, hasAnyRole } from "../utils/roles";
+import {
+  applicationRegistry,
+  canDisplayApplication,
+  externalApplicationGroups,
+} from "./appRegistry";
+
+const primaryNavigationApplicationIds = [
+  "dashboard",
+  "self_service",
+];
 
 export const sidebarNavigation = [
-  {
-    id: "home",
-    labelKey: "nav.home",
-    to: "/",
+  ...applicationRegistry
+    .filter((application) =>
+      primaryNavigationApplicationIds.includes(application.id),
+    )
+    .map((application) => ({
+      ...application,
+      ...(application.id === "dashboard" ? { labelKey: "nav.dashboard" } : {}),
+    })),
+  ...externalApplicationGroups.map((group) => ({
+    ...group,
+    type: "internal",
     end: true,
-    icon: HomeRoundedIcon,
-  },
-  {
-    id: "dashboard",
-    labelKey: "nav.dashboard",
-    to: "/dashboard",
-    end: true,
-    icon: DashboardRoundedIcon,
-  },
-  {
-    id: "eworkflow",
-    label: "eWorkflow",
-    to: "/dashboard/eworkflow",
-    end: true,
-    icon: AccountTreeRoundedIcon,
-    workspaceSection: true,
-    meta: {
-      metricValues: ["18", "4", "2d"],
-      accentColor: "primary.main",
-    },
-  },
-  {
-    id: "hr_admin",
-    labelKey: "nav.hr_admin",
-    to: "/dashboard/hr-admin",
-    end: false,
-    icon: PeopleRoundedIcon,
-  },
-  {
-    id: "administrator",
-    label: "Administrator",
-    to: "/dashboard/administrator",
-    end: true,
-    icon: AdminPanelSettingsRoundedIcon,
-    allowedRoleIds: ADMINISTRATOR_ROLE_IDS,
-  },
+  })),
+  ...applicationRegistry
+    .filter((application) => application.id === "administrator")
+    .map((application) => ({ ...application })),
   {
     id: "help",
     labelKey: "nav.help",
@@ -56,7 +35,11 @@ export const sidebarNavigation = [
       {
         id: "help-center",
         labelKey: "navChildren.helpCenter",
+        label: "Help Center",
         to: "/dashboard/help/center",
+        end: true,
+        type: "internal",
+        icon: HelpCenterRoundedIcon,
         meta: {
           metricValues: ["24", "8", "1d"],
           accentColor: "secondary.main",
@@ -67,17 +50,22 @@ export const sidebarNavigation = [
 ];
 
 function canDisplayNavigationItem(item, user) {
-  if (!item.allowedRoleIds?.length) {
-    return true;
-  }
-
-  return hasAnyRole(user, item.allowedRoleIds);
+  return canDisplayApplication(item, user);
 }
 
 export function getSidebarNavigationForUser(user) {
-  return sidebarNavigation.filter((item) =>
-    canDisplayNavigationItem(item, user),
-  );
+  return sidebarNavigation
+    .map((item) => ({
+      ...item,
+      children: item.children?.filter((child) =>
+        canDisplayNavigationItem(child, user),
+      ),
+    }))
+    .filter(
+      (item) =>
+        canDisplayNavigationItem(item, user)
+        && (!item.children || item.children.length > 0),
+    );
 }
 
 export function getNavigationLabel(item, t) {
@@ -86,17 +74,21 @@ export function getNavigationLabel(item, t) {
 
 function flattenSearchableNavigation(navigationItems) {
   return navigationItems.flatMap((item) => {
-    const directItem = item.to
+    const directItem = item.to || item.href
       ? [
           {
             id: item.id,
             labelKey: item.labelKey,
             label: item.label,
             to: item.to,
+            href: item.href,
+            type: item.type,
+            icon: item.icon,
             end: item.end,
             parentId: null,
             parentLabelKey: null,
             parentLabel: null,
+            parentIcon: null,
           },
         ]
       : [];
@@ -107,6 +99,7 @@ function flattenSearchableNavigation(navigationItems) {
         parentId: item.id,
         parentLabelKey: item.labelKey,
         parentLabel: item.label,
+        parentIcon: item.icon,
       })) || [];
 
     return [...directItem, ...childItems];

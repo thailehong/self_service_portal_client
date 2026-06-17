@@ -98,6 +98,18 @@ export function requestColumns({ workflows, onOpenDetail, onSubmit, onCancel, on
       render: (row) => <Chip label={row.status} color={getStatusColor(row.status)} size="small" />,
     },
     {
+      id: "currentStepName",
+      label: "Current step",
+      minWidth: 180,
+      render: (row) => row.currentStepName ? (
+        <Tooltip title={row.currentStepCode || "Current step"}>
+          <Chip size="small" variant="outlined" label={row.currentStepName} />
+        </Tooltip>
+      ) : "",
+      searchAccessor: (row) => `${row.currentStepCode || ""} ${row.currentStepName || ""}`.trim(),
+      sortAccessor: (row) => row.currentStepName || "",
+    },
+    {
       id: "createdAt",
       label: "Created",
       width: 180,

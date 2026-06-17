@@ -7,6 +7,7 @@ import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { DashboardPage } from "../pages/DashboardPage";
+import { SelfServicePage } from "../pages/SelfServicePage";
 import { HrAdminPage } from "../pages/HrAdminPage";
 import { HrAdminFeaturePage } from "../pages/HrAdminFeaturePage";
 import { MealOrdersPage } from "../pages/MealOrdersPage";
@@ -14,6 +15,7 @@ import { BookingBusPage } from "../pages/BookingBusPage";
 import { AdministratorPage } from "../pages/AdministratorPage";
 import { EWorkflowPage } from "../pages/EWorkflowPage";
 import { HelpCenterPage } from "../pages/HelpCenterPage";
+import { ExternalApplicationsPage } from "../pages/ExternalApplicationsPage";
 import { WorkspaceSectionPage } from "../pages/WorkspaceSectionPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { UnauthorizedPage } from "../pages/UnauthorizedPage";
@@ -55,11 +57,24 @@ export function AppRoutes() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="self-service" element={<SelfServicePage />} />
         <Route path="eworkflow" element={<EWorkflowPage />} />
         <Route path="hr-admin" element={<HrAdminPage />} />
         <Route path="hr-admin/order-meal" element={<MealOrdersPage />} />
         <Route path="hr-admin/booking-bus" element={<BookingBusPage />} />
         <Route path="hr-admin/:featureId" element={<HrAdminFeaturePage />} />
+        <Route
+          path="utility-application"
+          element={<ExternalApplicationsPage groupId="utility_application" />}
+        />
+        <Route
+          path="sfc-report"
+          element={<ExternalApplicationsPage groupId="sfc_report" />}
+        />
+        <Route
+          path="analytic"
+          element={<ExternalApplicationsPage groupId="analytic" />}
+        />
         <Route path="help/center" element={<HelpCenterPage />} />
         <Route
           path="administrator"

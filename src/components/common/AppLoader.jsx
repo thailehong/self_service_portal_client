@@ -9,8 +9,13 @@ export function AppLoader({ message }) {
         placeItems: 'center',
       }}
     >
-      <Stack spacing={2} alignItems="center">
-        <CircularProgress size={42} thickness={4} />
+      <Stack
+        direction="row"
+        spacing={1.5}
+        alignItems="center"
+        justifyContent="center"
+      >
+        <CircularProgress size={24} thickness={4} />
         <Typography variant="h6">{message}</Typography>
       </Stack>
     </Box>

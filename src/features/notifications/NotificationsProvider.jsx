@@ -12,6 +12,7 @@ export const NotificationsContext = createContext({
   markingIds: [],
   reloadNotifications: async () => {},
   markNotificationAsRead: async () => {},
+  markAllNotificationsAsRead: async () => {},
 });
 
 function getNotificationErrorMessage(error) {
@@ -120,6 +121,27 @@ export function NotificationsProvider({ children }) {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    if (!notifications.length) {
+      return;
+    }
+
+    const notificationIds = notifications.map((notification) => notification.id);
+    setMarkingIds((current) => [...new Set([...current, ...notificationIds])]);
+
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (requestError) {
+      setError(getNotificationErrorMessage(requestError));
+    } finally {
+      setMarkingIds((current) =>
+        current.filter((id) => !notificationIds.includes(id)),
+      );
+    }
+  };
+
   useEffect(() => {
     if (!auth.isAuthenticated) {
       setNotifications([]);
@@ -142,6 +164,7 @@ export function NotificationsProvider({ children }) {
       markingIds,
       reloadNotifications,
       markNotificationAsRead,
+      markAllNotificationsAsRead,
     }),
     [
       notifications,
@@ -151,6 +174,7 @@ export function NotificationsProvider({ children }) {
       markingIds,
       reloadNotifications,
       markNotificationAsRead,
+      markAllNotificationsAsRead,
     ],
   );
 

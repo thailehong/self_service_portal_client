@@ -6,9 +6,12 @@ export const defaultPreferences = {
   language: 'en',
   sidebarCollapsed: false,
   dashboardSectionOrder: [
+    'workflow-stats',
+    'quick-access',
+    'favorite-applications',
+    'announcements',
     'user-info',
     'notifications',
-    'events-training',
     'department-updates',
   ],
   dashboardHiddenSections: [],

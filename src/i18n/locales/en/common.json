@@ -1,6 +1,6 @@
 {
     "common":  {
-                   "appName":  "Employee Portal",
+                   "appName":  "DMS Portal",
                    "search":  "Search",
                    "comingSoon":  "Coming soon",
                    "notAvailable":  "Not available",
@@ -79,7 +79,7 @@
                  "registerTitle":  "Create portal access",
                  "registerHeading":  "Register a local account with your employee identity.",
                  "registerDescription":  "Only employees without an Active Directory account can create a local portal login. Your password is hashed on the backend and never stored in plain text.",
-                 "brandTitle":  "Employee Portal Workspace",
+                 "brandTitle":  "DMS Portal Workspace",
                  "brandDescription":  "A unified internal portal for access, operations, and employee productivity.",
                  "brandBullets":  [
                                       "Short-lived access tokens and HttpOnly refresh cookies",
