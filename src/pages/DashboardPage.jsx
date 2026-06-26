@@ -44,13 +44,13 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { useNotifications } from "../hooks/useNotifications";
 import { SectionCard } from "../components/layout/SectionCard";
 import { openNotificationLink } from "../utils/notificationLinks";
-import { workflowApi } from "../services/api/workflowApi";
+import { workItemsApi } from "../services/api/workItemsApi";
 import { portalFavoritesApi } from "../services/api/portalFavoritesApi";
 import {
   getFavoriteApplicationOptions,
   getApplicationsForUser,
-  openExternalApplication,
 } from "../app/appRegistry";
+import { launchExternalApplication } from "../app/applicationLaunch";
 import { getErrorMessage } from "./workflow/workflowUtils";
 
 function getUpdateIcon(updateId) {
@@ -323,7 +323,7 @@ function normalizeHiddenSections(hiddenSections, sectionIds) {
   );
 }
 
-function moveSection(order, draggedSectionId, targetSectionId) {
+function moveSection(order, draggedSectionId, targetSectionId, placement = "before") {
   if (
     !draggedSectionId ||
     !targetSectionId ||
@@ -345,7 +345,11 @@ function moveSection(order, draggedSectionId, targetSectionId) {
     return order;
   }
 
-  nextOrder.splice(targetIndex, 0, draggedSectionId);
+  nextOrder.splice(
+    placement === "after" ? targetIndex + 1 : targetIndex,
+    0,
+    draggedSectionId,
+  );
 
   return nextOrder;
 }
@@ -564,6 +568,7 @@ export function DashboardPage() {
   const [draggedSectionId, setDraggedSectionId] = useState(null);
   const [dragOverSectionId, setDragOverSectionId] = useState(null);
   const [workflowStats, setWorkflowStats] = useState({
+    tasks: 0,
     pendingApprovals: 0,
     inProgressRequests: 0,
     loading: false,
@@ -596,19 +601,15 @@ export function DashboardPage() {
     async function loadWorkflowStats() {
       setWorkflowStats((current) => ({ ...current, loading: true, error: "" }));
       try {
-        const [pendingApprovals, myRequests] = await Promise.all([
-          workflowApi.getPendingMyApproval(),
-          workflowApi.getMyRequests(),
-        ]);
+        const summary = await workItemsApi.getSummary();
         if (cancelled) {
           return;
         }
 
         setWorkflowStats({
-          pendingApprovals: pendingApprovals.length,
-          inProgressRequests: myRequests.filter(
-            (request) => request.status === "InProgress",
-          ).length,
+          tasks: summary.tasks,
+          pendingApprovals: summary.approvals,
+          inProgressRequests: summary.requests,
           loading: false,
           error: "",
         });
@@ -618,10 +619,11 @@ export function DashboardPage() {
         }
 
         setWorkflowStats({
+          tasks: 0,
           pendingApprovals: 0,
           inProgressRequests: 0,
           loading: false,
-          error: getErrorMessage(error, "Could not load eWorkflow tasks."),
+          error: getErrorMessage(error, "Could not load work inbox stats."),
         });
       }
     }
@@ -675,9 +677,14 @@ export function DashboardPage() {
   }, []);
 
   const handleOpenApplication = useCallback(
-    (application) => {
+    async (application) => {
       if (application.type === "external") {
-        openExternalApplication(application.href);
+        setFavoritesError("");
+        try {
+          await launchExternalApplication(application);
+        } catch (error) {
+          setFavoritesError(getErrorMessage(error, "Could not open application."));
+        }
         return;
       }
 
@@ -875,8 +882,7 @@ export function DashboardPage() {
     [favoriteApplicationOptions, favoriteIds],
   );
 
-  const myTaskCount =
-    workflowStats.pendingApprovals + workflowStats.inProgressRequests;
+  const myTaskCount = workflowStats.tasks;
 
   const sectionDefinitions = useMemo(
     () => [
@@ -902,7 +908,7 @@ export function DashboardPage() {
               color="success.main"
               accentBg="#E8F7EF"
               loading={workflowStats.loading}
-              onClick={() => navigate("/dashboard/eworkflow")}
+              onClick={() => navigate("/dashboard/work-inbox?bucket=tasks")}
             />
             <WorkflowStatCard
               title="My Approval"
@@ -912,17 +918,17 @@ export function DashboardPage() {
               color="primary.main"
               accentBg="#EAF1FF"
               loading={workflowStats.loading}
-              onClick={() => navigate("/dashboard/eworkflow?tab=pending")}
+              onClick={() => navigate("/dashboard/work-inbox?bucket=approvals")}
             />
             <WorkflowStatCard
               title="My Request"
               value={workflowStats.inProgressRequests}
-              helper="Total Requests"
+              helper="In Progress"
               icon={<PlaylistAddCheckRoundedIcon fontSize="small" />}
               color="secondary.main"
               accentBg="#F2E9FF"
               loading={workflowStats.loading}
-              onClick={() => navigate("/dashboard/eworkflow?tab=mine")}
+              onClick={() => navigate("/dashboard/work-inbox?bucket=requests")}
             />
           </Box>
         ),
@@ -1493,6 +1499,9 @@ export function DashboardPage() {
 
     const sourceSectionId =
       draggedSectionId || event.dataTransfer.getData("text/plain");
+    const targetRect = event.currentTarget.getBoundingClientRect();
+    const placement =
+      event.clientY > targetRect.top + targetRect.height / 2 ? "after" : "before";
 
     clearDragState();
 
@@ -1502,7 +1511,12 @@ export function DashboardPage() {
 
     dispatch(
       setDashboardSectionOrder(
-        moveSection(orderedSectionIds, sourceSectionId, targetSectionId),
+        moveSection(
+          orderedSectionIds,
+          sourceSectionId,
+          targetSectionId,
+          placement,
+        ),
       ),
     );
   };
@@ -1512,17 +1526,12 @@ export function DashboardPage() {
       <DashboardWelcomeHeader user={auth.user} now={currentDateTime} />
 
       <Stack spacing={3}>
-        {workflowStats.error ? (
-          <Alert severity="warning">{workflowStats.error}</Alert>
-        ) : null}
         <Box
           sx={{
-            columnCount: { xs: 1, lg: 2 },
-            columnGap: 2,
-            "& > *": {
-              breakInside: "avoid",
-              mb: 2,
-            },
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
+            alignItems: "start",
           }}
         >
           {visibleSections.map((section) => {
@@ -1548,7 +1557,7 @@ export function DashboardPage() {
                     ? (theme) => `2px dashed ${theme.palette.primary.main}`
                     : "none",
                   outlineOffset: 4,
-                  transform: isDropTarget ? "translateY(-4px)" : "none",
+                  transform: isDropTarget ? "translateY(-2px)" : "none",
                   transition: "transform 150ms ease, opacity 150ms ease",
                 }}
               >

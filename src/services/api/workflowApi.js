@@ -54,6 +54,8 @@ export function normalizeWorkflow(workflow) {
     code: workflow?.Code ?? workflow?.code ?? "",
     name: workflow?.Name ?? workflow?.name ?? "",
     description: workflow?.Description ?? workflow?.description ?? "",
+    bu: workflow?.BU ?? workflow?.bu ?? "",
+    department: workflow?.Department ?? workflow?.department ?? "",
     isActive: Boolean(workflow?.IsActive ?? workflow?.isActive),
     isPublic: Boolean(workflow?.IsPublic ?? workflow?.isPublic),
     versionMode: workflow?.VersionMode ?? workflow?.versionMode ?? "SnapshotOnCreate",
@@ -93,6 +95,7 @@ export function normalizeField(field) {
     dataType: field?.DataType ?? field?.dataType ?? "",
     isRequired: Boolean(field?.IsRequired ?? field?.isRequired),
     defaultValue: field?.DefaultValue ?? field?.defaultValue ?? "",
+    placeholder: field?.Placeholder ?? field?.placeholder ?? "",
     optionSourceType: field?.OptionSourceType ?? field?.optionSourceType ?? "Static",
     validationJson: field?.ValidationJson ?? field?.validationJson ?? "",
     displayOrder: Number(field?.DisplayOrder ?? field?.displayOrder ?? 0),
@@ -123,6 +126,7 @@ export function normalizeStep(step) {
     isRequired: Boolean(step?.IsRequired ?? step?.isRequired ?? true),
     minApproveCount: step?.MinApproveCount ?? step?.minApproveCount ?? "",
     reminderHours: step?.ReminderHours ?? step?.reminderHours ?? "",
+    parallelRejectPolicy: step?.ParallelRejectPolicy ?? step?.parallelRejectPolicy ?? "AnyReject",
     template: template ? {
       fileName: template.FileName ?? template.fileName ?? "",
       contentType: template.ContentType ?? template.contentType ?? "",
@@ -345,6 +349,8 @@ function buildWorkflowPayload(payload, includeCode = false) {
     ...(includeCode ? { Code: payload.code.trim() } : {}),
     Name: payload.name.trim(),
     Description: payload.description?.trim() || "",
+    BU: payload.bu?.trim() || "",
+    Department: payload.department?.trim() || "",
     IsActive: Boolean(payload.isActive),
     IsPublic: Boolean(payload.isPublic),
     VersionMode: payload.versionMode || "SnapshotOnCreate",
@@ -376,6 +382,7 @@ function buildStepPayload(payload) {
       payload.reminderHours === "" || payload.reminderHours === null || payload.reminderHours === undefined
         ? null
         : Number(payload.reminderHours),
+    ParallelRejectPolicy: payload.parallelRejectPolicy || "AnyReject",
   };
 }
 
@@ -386,6 +393,7 @@ function buildFieldPayload(payload) {
     DataType: String(payload.dataType || "").trim().toLowerCase(),
     IsRequired: Boolean(payload.isRequired),
     DefaultValue: payload.defaultValue?.trim() || null,
+    Placeholder: payload.placeholder?.trim() || null,
     OptionSourceType: payload.optionSourceType || "Static",
     ValidationJson: payload.validationJson?.trim() || null,
     DisplayOrder: Number(payload.displayOrder),

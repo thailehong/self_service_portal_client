@@ -37,7 +37,6 @@ import {
   Typography,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -48,15 +47,17 @@ import { AppDataTable } from "../components/datatable/AppDataTable";
 import { PageHeader } from "../components/layout/PageHeader";
 import { SectionCard } from "../components/layout/SectionCard";
 import { useNotifier } from "../hooks/useNotifier";
+import { masterDataApi } from "../services/api/masterDataApi";
 import { workflowApi } from "../services/api/workflowApi";
 import { formatDateTimeLabel } from "../utils/formatters";
-import { WorkflowFileField, WorkflowMultiSelectField, WorkflowSelectField, WorkflowTableField } from "./workflow/WorkflowFieldInputs";
+import { WorkflowDynamicField } from "./workflow/WorkflowDynamicField";
 import {
   DecisionDialog,
   FieldFormDialog,
   RequestDetailDialog as WorkflowRequestDetailDialog,
   StepFormDialog,
 } from "./workflow/WorkflowDialogs";
+import { WorkflowReviewDialog } from "./workflow/WorkflowReviewDialog";
 import { pendingColumns, requestColumns, workflowColumns } from "./workflow/workflowColumns";
 import {
   initialFieldForm,
@@ -85,14 +86,26 @@ import {
   findMissingRequiredField,
   getActiveInputFields,
   hasFieldValue,
-  isFieldConditionVisible,
-  isFieldRequiredNow,
   isVisibleInputField,
   validateFieldForm,
   validateStepForm,
 } from "./workflow/workflowUtils";
 
 const workflowTabs = ["start", "mine", "pending", "designer", "reports"];
+
+function formatCcnLabel(ccn) {
+  return [ccn?.code, ccn?.name].filter(Boolean).join(" - ") || ccn?.ccn || "";
+}
+
+function getCcnFormValue(ccn) {
+  return formatCcnLabel(ccn) || ccn?.ccn || "";
+}
+
+function matchesCcn(ccn, value) {
+  return [ccn?.ccn, ccn?.code, ccn?.name, formatCcnLabel(ccn)]
+    .filter(Boolean)
+    .some((item) => String(item).toLowerCase() === String(value || "").toLowerCase());
+}
 
 function RequestDetailDialog({ open, detail, workflows, workflowDetail, loading, error, onOpenFile, onClose }) {
   const fields = useMemo(() => flattenFields(workflowDetail?.steps || []), [workflowDetail]);
@@ -315,6 +328,9 @@ function getWorkflowStepMeta(step) {
   if (step.approverType) {
     parts.push(`Approver: ${step.approverType}${step.approverValue ? ` (${step.approverValue})` : ""}`);
   }
+  if (step.parallelRejectPolicy) {
+    parts.push(`Parallel reject: ${step.parallelRejectPolicy}`);
+  }
   return parts.join(" | ");
 }
 
@@ -341,6 +357,7 @@ export function EWorkflowPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryTab = searchParams.get("tab");
   const queryRequestId = searchParams.get("requestId");
+  const queryFileId = searchParams.get("fileId");
   const queryWorkflowId = searchParams.get("workflowId");
   const initialTab = workflowTabs.includes(queryTab) ? queryTab : "start";
 
@@ -368,10 +385,15 @@ export function EWorkflowPage() {
   const [designerDetail, setDesignerDetail] = useState(null);
   const [designerLoading, setDesignerLoading] = useState(false);
   const [designerError, setDesignerError] = useState("");
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [workflowDialog, setWorkflowDialog] = useState({ open: false, mode: "create", item: null });
   const [workflowForm, setWorkflowForm] = useState(initialWorkflowForm);
   const [workflowSubmitError, setWorkflowSubmitError] = useState("");
   const [workflowSubmitting, setWorkflowSubmitting] = useState(false);
+  const [workflowCcns, setWorkflowCcns] = useState([]);
+  const [workflowDepartments, setWorkflowDepartments] = useState([]);
+  const [workflowMasterLoading, setWorkflowMasterLoading] = useState(false);
+  const [workflowMasterError, setWorkflowMasterError] = useState("");
   const [stepDialog, setStepDialog] = useState({ open: false, mode: "create", item: null });
   const [stepForm, setStepForm] = useState(initialStepForm);
   const [stepSubmitError, setStepSubmitError] = useState("");
@@ -395,6 +417,7 @@ export function EWorkflowPage() {
 
   const [detailState, setDetailState] = useState({ open: false, request: null });
   const [openedQueryRequestId, setOpenedQueryRequestId] = useState("");
+  const [openedQueryFileKey, setOpenedQueryFileKey] = useState("");
   const [requestDetail, setRequestDetail] = useState(null);
   const [requestDetailWorkflow, setRequestDetailWorkflow] = useState(null);
   const [requestDetailLoading, setRequestDetailLoading] = useState(false);
@@ -537,6 +560,7 @@ export function EWorkflowPage() {
       const next = new URLSearchParams(current);
       next.set("tab", value);
       next.delete("requestId");
+      next.delete("fileId");
       return next;
     }, { replace: true });
   };
@@ -630,6 +654,20 @@ export function EWorkflowPage() {
     setOpenedQueryRequestId(queryRequestId);
     void openRequestDetail({ id: queryRequestId });
   }, [queryRequestId, openedQueryRequestId]);
+
+  useEffect(() => {
+    if (!queryFileId || !requestDetail || requestDetailLoading) {
+      return;
+    }
+
+    const fileKey = `${queryRequestId || requestDetail.instance?.id || ""}:${queryFileId}`;
+    if (openedQueryFileKey === fileKey) {
+      return;
+    }
+
+    setOpenedQueryFileKey(fileKey);
+    void openWorkflowFile({ id: queryFileId });
+  }, [queryFileId, queryRequestId, requestDetail, requestDetailLoading, openedQueryFileKey]);
 
   const uploadFieldFiles = async (requestId, fields, values) => {
     const fileFields = fields.filter((field) => field.dataType === "file");
@@ -821,19 +859,83 @@ export function EWorkflowPage() {
     }
   };
 
+  const loadWorkflowCcns = async () => {
+    setWorkflowMasterLoading(true);
+    setWorkflowMasterError("");
+    try {
+      const nextCcns = await masterDataApi.getCcns();
+      setWorkflowCcns(nextCcns);
+      return nextCcns;
+    } catch (error) {
+      setWorkflowMasterError(getErrorMessage(error, "Could not load BU master data."));
+      setWorkflowCcns([]);
+      return [];
+    } finally {
+      setWorkflowMasterLoading(false);
+    }
+  };
+
+  const loadWorkflowDepartmentsForCcn = async (ccn) => {
+    if (!ccn) {
+      setWorkflowDepartments([]);
+      return [];
+    }
+
+    setWorkflowMasterLoading(true);
+    setWorkflowMasterError("");
+    try {
+      const nextDepartments = await masterDataApi.getDepartmentsByCcn(ccn);
+      setWorkflowDepartments(nextDepartments);
+      return nextDepartments;
+    } catch (error) {
+      setWorkflowMasterError(getErrorMessage(error, "Could not load department master data."));
+      setWorkflowDepartments([]);
+      return [];
+    } finally {
+      setWorkflowMasterLoading(false);
+    }
+  };
+
+  const prepareWorkflowMasterData = async (item = null) => {
+    const nextCcns = await loadWorkflowCcns();
+    if (!item?.bu) {
+      setWorkflowDepartments([]);
+      return;
+    }
+
+    const matchedCcn = nextCcns.find((ccn) => matchesCcn(ccn, item.bu));
+    const ccnKey = matchedCcn?.ccn || "";
+    setWorkflowForm((current) => ({
+      ...current,
+      ccn: ccnKey,
+      bu: matchedCcn ? getCcnFormValue(matchedCcn) : current.bu,
+    }));
+
+    if (ccnKey) {
+      await loadWorkflowDepartmentsForCcn(ccnKey);
+    } else {
+      setWorkflowDepartments([]);
+    }
+  };
+
   const openWorkflowDialog = (mode, item = null) => {
     setWorkflowDialog({ open: true, mode, item });
     setWorkflowSubmitError("");
+    setWorkflowMasterError("");
     setWorkflowForm(item ? {
       code: item.code,
       name: item.name,
       description: item.description,
+      ccn: "",
+      bu: item.bu || "",
+      department: item.department || "",
       isActive: item.isActive,
       isPublic: item.isPublic,
       versionMode: item.versionMode || "SnapshotOnCreate",
       mail: item.mail || "",
       mailProfileName: item.mailProfileName || "",
     } : initialWorkflowForm);
+    void prepareWorkflowMasterData(item);
   };
 
   const closeWorkflowDialog = () => {
@@ -841,6 +943,8 @@ export function EWorkflowPage() {
       setWorkflowDialog({ open: false, mode: "create", item: null });
       setWorkflowForm(initialWorkflowForm);
       setWorkflowSubmitError("");
+      setWorkflowMasterError("");
+      setWorkflowDepartments([]);
     }
   };
 
@@ -852,6 +956,11 @@ export function EWorkflowPage() {
 
     if (!workflowForm.name.trim()) {
       setWorkflowSubmitError("Name is required.");
+      return;
+    }
+
+    if (!workflowForm.bu.trim() || !workflowForm.department.trim()) {
+      setWorkflowSubmitError("BU and Department are required.");
       return;
     }
 
@@ -876,9 +985,13 @@ export function EWorkflowPage() {
   };
 
   const openStepDialog = (mode, step = null) => {
+    const parallelPeer = step
+      ? (designerDetail?.steps || []).find((item) => String(item.id) !== String(step.id) && Number(item.stepOrder) === Number(step.stepOrder))
+      : null;
     setStepDialog({ open: true, mode, item: step });
     setStepSubmitError("");
     setStepForm(step ? {
+      id: step.id,
       stepOrder: step.stepOrder,
       stepGroup: step.stepGroup ?? "",
       stepCode: step.stepCode,
@@ -889,7 +1002,9 @@ export function EWorkflowPage() {
       isRequired: step.isRequired,
       minApproveCount: step.minApproveCount ?? "",
       reminderHours: step.reminderHours ?? "",
-    } : { ...initialStepForm, stepOrder: nextDesignerStepOrder });
+      parallelRejectPolicy: step.parallelRejectPolicy || "AnyReject",
+      parallelWithStepId: parallelPeer?.id || "",
+    } : { ...initialStepForm, stepOrder: nextDesignerStepOrder, parallelWithStepId: "" });
   };
 
   const closeStepDialog = () => {
@@ -995,6 +1110,7 @@ export function EWorkflowPage() {
       dataType: field.dataType,
       isRequired: field.isRequired,
       defaultValue: field.defaultValue || "",
+      placeholder: field.placeholder || "",
       optionSourceType: field.optionSourceType || "Static",
       validationJson: field.validationJson || "",
       displayOrder: field.displayOrder,
@@ -1397,93 +1513,6 @@ export function EWorkflowPage() {
     }
   };
 
-  const renderDynamicField = (field) => {
-    if (!isVisibleInputField(field) || !isFieldConditionVisible(field, startFields, requestValues)) {
-      return null;
-    }
-
-    const value = requestValues[field.id];
-    const activeOptions = field.options.filter((option) => option.isActive);
-    const setValue = (nextValue) => setRequestValues((current) => ({ ...current, [field.id]: nextValue }));
-    const required = isFieldRequiredNow(field, startFields, requestValues);
-
-    if (field.dataType === "boolean") {
-      return (
-        <FormControlLabel
-          control={<Checkbox checked={Boolean(value)} onChange={(event) => setValue(event.target.checked)} />}
-          label={field.label}
-        />
-      );
-    }
-
-    if (field.dataType === "select") {
-      return (
-        <WorkflowSelectField field={field} value={value} onChange={setValue} required={required} values={requestValues} fields={startFields} />
-      );
-    }
-
-    if (field.dataType === "multi-select") {
-      return (
-        <WorkflowMultiSelectField field={field} value={value} onChange={setValue} required={required} values={requestValues} fields={startFields} />
-      );
-    }
-
-    if (field.dataType === "date") {
-      return (
-        <DatePicker
-          label={field.label}
-          value={value ? dayjs(value) : null}
-          onChange={(nextValue) => setValue(nextValue?.isValid() ? nextValue.format("YYYY-MM-DD") : "")}
-          slotProps={{ textField: { fullWidth: true, required } }}
-        />
-      );
-    }
-
-    if (field.dataType === "datetime") {
-      return (
-        <DateTimePicker
-          label={field.label}
-          value={value ? dayjs(value) : null}
-          onChange={(nextValue) => setValue(nextValue?.isValid() ? nextValue.toISOString() : "")}
-          slotProps={{ textField: { fullWidth: true, required } }}
-        />
-      );
-    }
-
-    if (field.dataType === "file") {
-      return (
-        <WorkflowFileField
-          field={{ ...field, isRequired: required }}
-          value={value}
-          onChange={setValue}
-        />
-      );
-    }
-
-    if (field.dataType === "table") {
-      return (
-        <WorkflowTableField
-          field={{ ...field, isRequired: required }}
-          value={value}
-          onChange={setValue}
-        />
-      );
-    }
-
-    return (
-      <TextField
-        label={field.label}
-        type={field.dataType === "number" ? "number" : "text"}
-        value={value ?? ""}
-        onChange={(event) => setValue(event.target.value)}
-        required={required}
-        multiline={field.dataType === "textarea"}
-        minRows={field.dataType === "textarea" ? 3 : undefined}
-        fullWidth
-      />
-    );
-  };
-
   const currentWorkflowColumns = useMemo(() => workflowColumns({
     onSelect: (workflow) => {
       setDesignerWorkflowId(workflow.id);
@@ -1607,9 +1636,15 @@ export function EWorkflowPage() {
                           <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
                             {step.fields.filter((field) =>
                               activeStartFieldIds.has(field.id)
-                              && isFieldConditionVisible(field, startFields, requestValues)
                             ).map((field) => (
-                              <Box key={field.id}>{renderDynamicField({ ...field, stepId: step.id, stepName: step.stepName, stepOrder: step.stepOrder, stepTemplate: field.template })}</Box>
+                              <Box key={field.id} sx={{ minWidth: 0, gridColumn: ["file", "table"].includes(field.dataType) ? "1 / -1" : undefined }}>
+                                <WorkflowDynamicField
+                                  field={{ ...field, stepId: step.id, stepName: step.stepName, stepOrder: step.stepOrder, stepTemplate: field.template }}
+                                  fields={startFields}
+                                  values={requestValues}
+                                  onChange={(fieldId, nextValue) => setRequestValues((current) => ({ ...current, [fieldId]: nextValue }))}
+                                />
+                              </Box>
                             ))}
                           </Box>
                         </Stack>
@@ -1717,7 +1752,18 @@ export function EWorkflowPage() {
               title={designerDetail.workflow.name}
               subtitle={`${designerDetail.workflow.code} · ${designerDetail.workflow.isActive ? "Active" : "Inactive"}`}
               cardSx={{ borderRadius: 0 }}
-              action={canManageDesigner ? <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => openStepDialog("create")}>Add step</Button> : null}
+              action={(
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  <Button variant="outlined" startIcon={<VisibilityRoundedIcon />} onClick={() => setReviewOpen(true)} disabled={!designerDetail}>
+                    Review UI
+                  </Button>
+                  {canManageDesigner ? (
+                    <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => openStepDialog("create")}>
+                      Add step
+                    </Button>
+                  ) : null}
+                </Stack>
+              )}
             >
               <Stack spacing={3}>
                 {designerLoading ? <Alert severity="info" variant="outlined">Loading configuration...</Alert> : null}
@@ -2181,9 +2227,50 @@ export function EWorkflowPage() {
         <DialogContent>
           <Stack spacing={2.25} sx={{ pt: 1 }}>
             {workflowSubmitError ? <Alert severity="error" variant="outlined">{workflowSubmitError}</Alert> : null}
+            {workflowMasterError ? <Alert severity="warning" variant="outlined">{workflowMasterError}</Alert> : null}
             <TextField label="Code" value={workflowForm.code} onChange={(event) => setWorkflowForm((current) => ({ ...current, code: event.target.value }))} required disabled={workflowDialog.mode === "edit"} fullWidth />
             <TextField label="Name" value={workflowForm.name} onChange={(event) => setWorkflowForm((current) => ({ ...current, name: event.target.value }))} required fullWidth />
             <TextField label="Description" value={workflowForm.description} onChange={(event) => setWorkflowForm((current) => ({ ...current, description: event.target.value }))} minRows={3} multiline fullWidth />
+            <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
+              <Autocomplete
+                options={workflowCcns}
+                value={workflowCcns.find((ccn) => String(ccn.ccn) === String(workflowForm.ccn)) || null}
+                getOptionLabel={formatCcnLabel}
+                isOptionEqualToValue={(option, value) => String(option.ccn) === String(value.ccn)}
+                loading={workflowMasterLoading}
+                disabled={workflowSubmitting || workflowMasterLoading}
+                onChange={(_, ccn) => {
+                  const ccnKey = ccn?.ccn || "";
+                  setWorkflowForm((current) => ({
+                    ...current,
+                    ccn: ccnKey,
+                    bu: ccn ? getCcnFormValue(ccn) : "",
+                    department: "",
+                  }));
+                  void loadWorkflowDepartmentsForCcn(ccnKey);
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="BU" required fullWidth />
+                )}
+              />
+              <Autocomplete
+                options={workflowDepartments}
+                value={workflowDepartments.find((department) => department.kronosDeptName === workflowForm.department) || (workflowForm.department ? { kronosDeptName: workflowForm.department } : null)}
+                getOptionLabel={(department) => department?.kronosDeptName || ""}
+                isOptionEqualToValue={(option, value) => option.kronosDeptName === value.kronosDeptName}
+                loading={workflowMasterLoading}
+                disabled={workflowSubmitting || workflowMasterLoading || !workflowForm.ccn}
+                onChange={(_, department) => {
+                  setWorkflowForm((current) => ({
+                    ...current,
+                    department: department?.kronosDeptName || "",
+                  }));
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Department" required fullWidth />
+                )}
+              />
+            </Box>
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
               <TextField label="Mail" value={workflowForm.mail} onChange={(event) => setWorkflowForm((current) => ({ ...current, mail: event.target.value }))} fullWidth />
               <TextField label="Profile name" value={workflowForm.mailProfileName} onChange={(event) => setWorkflowForm((current) => ({ ...current, mailProfileName: event.target.value }))} fullWidth />
@@ -2202,15 +2289,23 @@ export function EWorkflowPage() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button onClick={closeWorkflowDialog} disabled={workflowSubmitting}>Cancel</Button>
-          <Button variant="contained" startIcon={<SaveRoundedIcon />} onClick={handleSaveWorkflow} disabled={workflowSubmitting}>Save workflow</Button>
+          <Button variant="contained" startIcon={<SaveRoundedIcon />} onClick={handleSaveWorkflow} disabled={workflowSubmitting || workflowMasterLoading}>Save workflow</Button>
         </DialogActions>
       </Dialog>
+
+      <WorkflowReviewDialog
+        open={reviewOpen}
+        workflowDetail={designerDetail}
+        onClose={() => setReviewOpen(false)}
+      />
 
       <StepFormDialog
         open={stepDialog.open}
         mode={stepDialog.mode}
         form={stepForm}
         groups={designerDetail?.groups || []}
+        steps={designerDetail?.steps || []}
+        nextStepOrder={nextDesignerStepOrder}
         setForm={setStepForm}
         error={stepSubmitError}
         submitting={configSubmitting}

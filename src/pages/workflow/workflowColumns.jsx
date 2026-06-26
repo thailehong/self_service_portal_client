@@ -11,6 +11,8 @@ export function workflowColumns({ onSelect, onEdit }) {
   return [
     { id: "code", label: "Code", width: 160 },
     { id: "name", label: "Name", minWidth: 220 },
+    { id: "bu", label: "BU", minWidth: 180 },
+    { id: "department", label: "Department", minWidth: 180 },
     {
       id: "isActive",
       label: "Status",

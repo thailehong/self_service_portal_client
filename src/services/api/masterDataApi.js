@@ -82,6 +82,11 @@ export const masterDataApi = {
     return unwrapCollection(data).map(normalizeSite);
   },
 
+  async getCcns() {
+    const { data } = await apiClient.get(`${masterDataBasePath}/ccns`);
+    return unwrapCollection(data).map(normalizeCcn);
+  },
+
   async getCcnsBySite(siteId) {
     const { data } = await apiClient.get(
       `${masterDataBasePath}/ccns/site/${encodeURIComponent(siteId)}`,

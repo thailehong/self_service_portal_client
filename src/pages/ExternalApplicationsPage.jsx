@@ -14,8 +14,8 @@ import { PageHeader } from "../components/layout/PageHeader";
 import {
   applicationRegistry,
   externalApplicationGroups,
-  openExternalApplication,
 } from "../app/appRegistry";
+import { launchExternalApplication } from "../app/applicationLaunch";
 import { portalFavoritesApi } from "../services/api/portalFavoritesApi";
 import { getErrorMessage } from "./workflow/workflowUtils";
 
@@ -99,6 +99,16 @@ export function ExternalApplicationsPage({ groupId }) {
     }
   };
 
+  const handleOpenApplication = async (application) => {
+    setFavoriteError("");
+
+    try {
+      await launchExternalApplication(application);
+    } catch (error) {
+      setFavoriteError(getErrorMessage(error, "Could not open application."));
+    }
+  };
+
   return (
     <Stack spacing={3}>
       <PageHeader
@@ -132,7 +142,7 @@ export function ExternalApplicationsPage({ groupId }) {
               key={application.id}
               component="button"
               type="button"
-              onClick={() => openExternalApplication(application.href)}
+              onClick={() => void handleOpenApplication(application)}
               sx={{
                 width: "80%",
                 aspectRatio: "1 / 1",

@@ -21,7 +21,7 @@ import {
   getNavigationLabel,
   getSidebarNavigationForUser,
 } from "../../app/navigation";
-import { openExternalApplication } from "../../app/appRegistry";
+import { launchExternalApplication } from "../../app/applicationLaunch";
 import { selectAuth } from "../../features/auth/authSlice";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { AppLogo } from "../common/AppLogo";
@@ -100,7 +100,7 @@ export function Sidebar({ collapsed = false }) {
     }
 
     event.preventDefault();
-    openExternalApplication(item.href);
+    void launchExternalApplication(item);
     afterClick?.();
   };
 

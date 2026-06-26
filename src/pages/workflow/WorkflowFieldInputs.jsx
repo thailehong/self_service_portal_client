@@ -12,9 +12,7 @@ import { getErrorMessage, getStoredProcedureConfig } from "./workflowUtils";
 
 export function getTableColumns(field) {
   const config = getTableConfig(field);
-  const columns = Array.isArray(config)
-    ? config
-    : config.columns || config.Columns || config.tableColumns || config.TableColumns || config.schema?.columns || config.Schema?.Columns || [];
+  const columns = resolveTableColumns(config);
 
   return Array.isArray(columns)
     ? columns.map((column) => ({
@@ -27,6 +25,46 @@ export function getTableColumns(field) {
       options: column.options ?? column.Options ?? [],
     })).filter((column) => column.key)
     : [];
+}
+
+function readConfigValue(config, keys) {
+  if (!config || typeof config !== "object" || Array.isArray(config)) {
+    return undefined;
+  }
+
+  const matchingKey = Object.keys(config).find((key) => keys.some((candidate) => key.toLowerCase() === candidate.toLowerCase()));
+  return matchingKey ? config[matchingKey] : undefined;
+}
+
+function parseNestedConfig(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function resolveTableColumns(config) {
+  const parsedConfig = parseNestedConfig(config);
+  if (Array.isArray(parsedConfig)) {
+    return parsedConfig;
+  }
+
+  if (!parsedConfig || typeof parsedConfig !== "object") {
+    return [];
+  }
+
+  const directColumns = readConfigValue(parsedConfig, ["columns", "tableColumns"]);
+  if (Array.isArray(directColumns)) {
+    return directColumns;
+  }
+
+  const nestedConfig = readConfigValue(parsedConfig, ["schema", "table", "tableField", "tableSchema", "tableConfig"]);
+  return nestedConfig ? resolveTableColumns(nestedConfig) : [];
 }
 
 function getTableConfig(field) {
@@ -89,7 +127,7 @@ const optionFilter = createFilterOptions({
   stringify: (option) => `${option?.label || ""} ${option?.value || ""}`,
 });
 
-export function WorkflowFileField({ field, value, onChange }) {
+export function WorkflowFileField({ field, value, onChange, preview = false }) {
   const currentValue = value && typeof value === "object" ? value : { files: [], existingFiles: [] };
   const files = Array.from(currentValue.files || []);
   const existingFiles = currentValue.existingFiles || [];
@@ -121,7 +159,7 @@ export function WorkflowFileField({ field, value, onChange }) {
           <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>{field.label}{field.isRequired ? " *" : ""}</Typography>
           {field.stepTemplate ? (
             <Tooltip title="Download template">
-              <Button size="small" variant="outlined" startIcon={<DownloadRoundedIcon />} onClick={downloadTemplate} sx={{ ml: "auto", flexShrink: 0 }}>
+              <Button size="small" variant="outlined" startIcon={<DownloadRoundedIcon />} onClick={downloadTemplate} disabled={preview} sx={{ ml: "auto", flexShrink: 0 }}>
                 {field.stepTemplate.fileName || "Template"}
               </Button>
             </Tooltip>
@@ -136,14 +174,24 @@ export function WorkflowFileField({ field, value, onChange }) {
         ) : null}
       </Stack>
       {downloadError ? <Alert severity="error">{downloadError}</Alert> : null}
-      <DragDropUpload
-        files={files}
-        onFilesChange={(nextFiles) => onChange({ ...currentValue, files: nextFiles })}
-        multiple
-        allowedExtensions={["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff"]}
-        maxSizeMb={25}
-        compact
-      />
+      {preview ? (
+        <Box sx={{ p: 1.5, borderRadius: 1, border: (theme) => `1px dashed ${theme.palette.divider}`, bgcolor: "background.default" }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <UploadFileRoundedIcon fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">File upload preview</Typography>
+            <Chip size="small" label="No upload" variant="outlined" sx={{ ml: "auto" }} />
+          </Stack>
+        </Box>
+      ) : (
+        <DragDropUpload
+          files={files}
+          onFilesChange={(nextFiles) => onChange({ ...currentValue, files: nextFiles })}
+          multiple
+          allowedExtensions={["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff"]}
+          maxSizeMb={25}
+          compact
+        />
+      )}
     </Stack>
   );
 }
@@ -211,7 +259,7 @@ export function StoredProcedureField({ field, value, onChange }) {
   );
 }
 
-export function WorkflowTableField({ field, value, onChange }) {
+export function WorkflowTableField({ field, value, onChange, preview = false }) {
   const config = getTableConfig(field);
   const columns = getTableColumns(field);
   const allowManualInput = config.allowManualInput ?? config.AllowManualInput ?? true;
@@ -289,7 +337,7 @@ export function WorkflowTableField({ field, value, onChange }) {
               variant="outlined"
               startIcon={<DownloadRoundedIcon />}
               onClick={downloadTableTemplate}
-              disabled={excelBusy || !columns.length}
+              disabled={preview || excelBusy || !columns.length}
             >
               Template
             </Button>
@@ -298,7 +346,7 @@ export function WorkflowTableField({ field, value, onChange }) {
               variant="outlined"
               component="label"
               startIcon={<UploadFileRoundedIcon />}
-              disabled={excelBusy || !columns.length}
+              disabled={preview || excelBusy || !columns.length}
             >
               Import Excel
               <Box
@@ -549,7 +597,7 @@ export function WorkflowSelectField({ field, value, onChange, required, values, 
           </Stack>
         </Box>
       )}
-      renderInput={(params) => <TextField {...params} label={field.label} required={required} />}
+      renderInput={(params) => <TextField {...params} label={field.label} required={required} placeholder={field.placeholder || undefined} />}
     />
   );
 }
@@ -600,7 +648,7 @@ export function WorkflowMultiSelectField({ field, value, onChange, required, val
           </Stack>
         </Box>
       )}
-      renderInput={(params) => <TextField {...params} label={field.label} required={required} />}
+      renderInput={(params) => <TextField {...params} label={field.label} required={required} placeholder={field.placeholder || undefined} />}
     />
   );
 }

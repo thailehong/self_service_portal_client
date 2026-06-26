@@ -77,6 +77,7 @@ export function AppDataTable({
   searchPlaceholder,
   defaultSortBy,
   defaultSortDirection = 'asc',
+  onRowClick,
 }) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
@@ -271,6 +272,7 @@ export function AppDataTable({
           onRowSelectionModelChange={(model) => {
             setSelectedIds(Array.from(model.ids));
           }}
+          onRowClick={(params) => onRowClick?.(params.row)}
           localeText={localeText}
           slots={{
             loadingOverlay: LoadingOverlay,
@@ -301,6 +303,13 @@ export function AppDataTable({
             '& .MuiDataGrid-cell': {
               alignItems: 'center',
             },
+            ...(onRowClick
+              ? {
+                  '& .MuiDataGrid-row': {
+                    cursor: 'pointer',
+                  },
+                }
+              : {}),
             '& .MuiDataGrid-footerContainer': {
               borderTop: (theme) => `1px solid ${theme.palette.divider}`,
             },

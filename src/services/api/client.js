@@ -38,6 +38,14 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (error?.config?.headers?.Authorization) {
+      delete error.config.headers.Authorization;
+    }
+
+    if (error?.response?.config?.headers?.Authorization) {
+      delete error.response.config.headers.Authorization;
+    }
+
     const originalRequest = error.config;
     const status = error.response?.status;
     const url = originalRequest?.url || '';

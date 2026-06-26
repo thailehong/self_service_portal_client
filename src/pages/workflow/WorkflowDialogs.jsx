@@ -1,6 +1,7 @@
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import {
   Alert,
@@ -26,8 +27,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs from "dayjs";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
@@ -37,15 +36,16 @@ import {
   initialFieldForm,
   initialStepForm,
   optionSourceTypes,
+  parallelRejectPolicies,
   workflowApproverPermissions,
 } from "./workflowConstants";
-import { WorkflowFileField, WorkflowMultiSelectField, WorkflowSelectField, WorkflowTableField, WorkflowTableValueDisplay } from "./WorkflowFieldInputs";
+import { WorkflowTableValueDisplay } from "./WorkflowFieldInputs";
+import { WorkflowDynamicField } from "./WorkflowDynamicField";
 import {
   flattenFields,
   formatFieldValue,
   getActiveInputFields,
   getStatusColor,
-  isFieldRequiredNow,
   isVisibleInputField,
 } from "./workflowUtils";
 
@@ -93,15 +93,163 @@ const conditionalValidationTemplate = JSON.stringify({
   requiredWhen: { fieldKey: "Answer", operator: "equals", value: "No" },
 }, null, 2);
 
+const buildConditionTemplate = (visibleWhen, requiredWhen = visibleWhen) => JSON.stringify({
+  visibleWhen,
+  requiredWhen,
+}, null, 2);
+
+const conditionalGuideItems = [
+  {
+    title: "Condition operator: equals",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "Status", operator: "equals", value: "Open" },
+      { fieldKey: "Status", operator: "equals", value: "Open" },
+    ),
+  },
+  {
+    title: "Condition operator: notEquals",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "Status", operator: "notEquals", value: "Closed" },
+      { fieldKey: "Status", operator: "!=", value: "Closed" },
+    ),
+  },
+  {
+    title: "Condition operator: in",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "ProductGroup", operator: "in", values: ["A", "B"] },
+      { fieldKey: "ProductGroup", operator: "in", values: ["A", "B"] },
+    ),
+  },
+  {
+    title: "Condition operator: notIn",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "ProductGroup", operator: "notIn", values: ["C", "D"] },
+      { fieldKey: "ProductGroup", operator: "not-in", values: ["C", "D"] },
+    ),
+  },
+  {
+    title: "Condition operator: empty",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "Reason", operator: "empty" },
+      { fieldKey: "Reason", operator: "empty" },
+    ),
+  },
+  {
+    title: "Condition operator: notEmpty",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "Reason", operator: "notEmpty" },
+      { fieldKey: "Reason", operator: "not-empty" },
+    ),
+  },
+  {
+    title: "Condition op alias",
+    body: "",
+    code: buildConditionTemplate(
+      { fieldKey: "Answer", op: "equals", value: "No" },
+      { fieldKey: "Answer", op: "equals", value: "No" },
+    ),
+  },
+];
+
+
 const tableValidationTemplate = JSON.stringify({
   allowManualInput: true,
   allowExcelImport: true,
   columns: [
-    { key: "EmpID", label: "Employee ID", dataType: "text", required: true, maxLength: 20 },
+    { key: "EmployeeID", label: "Employee ID", dataType: "text", required: true, maxLength: 20 },
     { key: "DateOfBirth", label: "Date of birth", dataType: "date", required: false },
-    { key: "Department", label: "Department", dataType: "text", required: true, maxLength: 100 },
+    { key: "IsActive", label: "Active", dataType: "boolean", required: true },
+    {
+      key: "Department",
+      label: "Department",
+      dataType: "select",
+      required: true,
+      options: [
+        { value: "HR", label: "Human Resources" },
+        { value: "IT", label: "IT" },
+        { value: "FIN", label: "Finance" },
+      ],
+    },
+    {
+      key: "Skills",
+      label: "Skills",
+      dataType: "multi-select",
+      required: false,
+      options: [
+        { value: "CSharp", label: "C#" },
+        { value: "SQL", label: "SQL" },
+        { value: "React", label: "React" },
+      ],
+    },
   ],
 }, null, 2);
+
+const tableWithConditionTemplate = JSON.stringify({
+  visibleWhen: { fieldKey: "NeedEmployeeList", operator: "equals", value: "Yes" },
+  requiredWhen: { fieldKey: "NeedEmployeeList", operator: "equals", value: "Yes" },
+  allowManualInput: true,
+  allowExcelImport: true,
+  columns: [
+    { key: "EmployeeID", label: "Employee ID", dataType: "text", required: true, maxLength: 20 },
+    { key: "Department", label: "Department", dataType: "select", required: true, options: [
+      { value: "HR", label: "Human Resources" },
+      { value: "IT", label: "IT" },
+    ] },
+  ],
+}, null, 2);
+
+const tableNestedSchemaTemplate = JSON.stringify({
+  visibleWhen: { fieldKey: "NeedEmployeeList", operator: "equals", value: "Yes" },
+  requiredWhen: { fieldKey: "NeedEmployeeList", operator: "equals", value: "Yes" },
+  table: {
+    allowManualInput: true,
+    allowExcelImport: true,
+    columns: [
+      { key: "EmployeeID", label: "Employee ID", dataType: "text", required: true, maxLength: 20 },
+      { key: "DateOfBirth", label: "Date of birth", dataType: "date", required: false },
+    ],
+  },
+}, null, 2);
+
+const validationGuideItems = [
+  ...conditionalGuideItems,
+  {
+    title: "Table field",
+    body: "",
+    code: tableValidationTemplate,
+  },
+  {
+    title: "Table field with visibleWhen / requiredWhen",
+    body: "",
+    code: tableWithConditionTemplate,
+  },
+  {
+    title: "Table field with nested schema",
+    body: "",
+    code: tableNestedSchemaTemplate,
+  },
+  {
+    title: "Stored procedure field",
+    body: "Stored procedure fields run automatically on approval. Use sourceField to pass file/table data into TVP parameters.",
+    code: storedProcedureValidationTemplate,
+  },
+  {
+    title: "Dynamic select from stored procedure",
+    body: "The stored procedure must return Value and Label columns. Use sourceFieldKey to bind a parameter to another field key.",
+    code: optionStoredProcedureTemplate,
+  },
+  {
+    title: "Dynamic select from SQL query",
+    body: "SQL query must be read-only and return Value and Label columns. Use sourceFieldKey for dependent dropdown filtering.",
+    code: optionSqlQueryTemplate,
+  },
+];
 
 const getWorkflowGroupValue = (group) => {
   const groupCode = String(group?.groupCode ?? "").trim();
@@ -116,12 +264,20 @@ export const StepFormDialog = memo(function StepFormDialog({
   mode,
   form,
   groups = [],
+  steps = [],
+  nextStepOrder,
   error,
   submitting,
   onClose,
   onSubmit,
 }) {
   const [localForm, setLocalForm] = useState(form || initialStepForm);
+  const parallelStepOptions = useMemo(
+    () => (steps || [])
+      .filter((step) => String(step?.id ?? step?.ID ?? "") !== String(localForm.id ?? ""))
+      .sort((left, right) => (Number(left.stepOrder ?? left.StepOrder ?? 0) - Number(right.stepOrder ?? right.StepOrder ?? 0)) || (Number(left.id ?? left.ID ?? 0) - Number(right.id ?? right.ID ?? 0))),
+    [localForm.id, steps],
+  );
   const activeWorkflowGroups = useMemo(
     () => (groups || []).filter((group) => group?.isActive !== false && getWorkflowGroupValue(group)),
     [groups],
@@ -151,15 +307,58 @@ export const StepFormDialog = memo(function StepFormDialog({
       <DialogContent>
         <Stack spacing={2.25} sx={{ pt: 1 }}>
           {error ? <Alert severity="error" variant="outlined">{error}</Alert> : null}
-          <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "minmax(180px, 240px)" } }}>
+          <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "minmax(160px, 200px) minmax(260px, 1fr) minmax(220px, 280px)" } }}>
             <TextField
               label="Order"
               type="number"
               value={localForm.stepOrder}
-              helperText="Auto assigned by workflow."
+              helperText="Steps with the same order run in parallel."
               disabled
               required
             />
+            <FormControl fullWidth>
+              <InputLabel>Run in parallel with</InputLabel>
+              <Select
+                label="Run in parallel with"
+                value={localForm.parallelWithStepId || ""}
+                onChange={(event) => {
+                  const selectedId = event.target.value;
+                  const selectedStep = parallelStepOptions.find((step) => String(step.id ?? step.ID) === String(selectedId));
+                  setLocalForm((current) => ({
+                    ...current,
+                    parallelWithStepId: selectedId,
+                    stepOrder: selectedStep
+                      ? Number(selectedStep.stepOrder ?? selectedStep.StepOrder ?? current.stepOrder)
+                      : current.parallelWithStepId && current.id
+                        ? Number(nextStepOrder || current.stepOrder)
+                        : form?.stepOrder ?? current.stepOrder,
+                  }));
+                }}
+              >
+                <MenuItem value="">Not parallel</MenuItem>
+                {parallelStepOptions.map((step) => (
+                  <MenuItem key={step.id ?? step.ID} value={step.id ?? step.ID}>
+                    Order {step.stepOrder ?? step.StepOrder} - {step.stepName ?? step.StepName}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>Select a step to share its order and activate together.</FormHelperText>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Parallel reject policy</InputLabel>
+              <Select
+                label="Parallel reject policy"
+                value={localForm.parallelRejectPolicy || "AnyReject"}
+                onChange={(event) => setLocalForm((current) => ({ ...current, parallelRejectPolicy: event.target.value }))}
+              >
+                {parallelRejectPolicies.map((policy) => (
+                  <MenuItem key={policy} value={policy}>
+                    {policy === "AnyReject" ? "Any branch rejects request" : "Reject only when all branches reject"}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>Applies when multiple steps share the same order.</FormHelperText>
+            </FormControl>
           </Box>
           <TextField label="Step name" value={localForm.stepName} onChange={(event) => setLocalForm((current) => ({ ...current, stepName: event.target.value }))} required fullWidth />
           <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" } }}>
@@ -180,7 +379,7 @@ export const StepFormDialog = memo(function StepFormDialog({
                   approverValue:
                     event.target.value === "WorkflowPermission"
                       ? "Approver"
-                      : event.target.value === "NoApproval" || event.target.value === "HOD"
+                      : event.target.value === "NoApproval" || event.target.value === "HOD" || event.target.value === "Requester"
                         ? event.target.value
                         : event.target.value === "Group"
                           ? getWorkflowGroupValue(activeWorkflowGroups[0])
@@ -240,7 +439,7 @@ export const StepFormDialog = memo(function StepFormDialog({
                     : "Create an active workflow group before using Group approval."}
                 </FormHelperText>
               </FormControl>
-            ) : localForm.approverType === "NoApproval" || localForm.approverType === "HOD" ? (
+            ) : localForm.approverType === "NoApproval" || localForm.approverType === "HOD" || localForm.approverType === "Requester" ? (
               <TextField label="Approver value" value={localForm.approverType} disabled />
             ) : (
               <TextField label="Approver email / username" value={localForm.approverValue} onChange={(event) => setLocalForm((current) => ({ ...current, approverValue: event.target.value }))} required />
@@ -267,7 +466,7 @@ export const StepFormDialog = memo(function StepFormDialog({
           onClick={() => onSubmit({
             ...localForm,
             approverValue:
-              localForm.approverType === "NoApproval" || localForm.approverType === "HOD"
+              localForm.approverType === "NoApproval" || localForm.approverType === "HOD" || localForm.approverType === "Requester"
                 ? localForm.approverType
                 : localForm.approverValue,
           })}
@@ -282,6 +481,7 @@ export const StepFormDialog = memo(function StepFormDialog({
 
 export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form, error, submitting, onClose, onSubmit }) {
   const [localForm, setLocalForm] = useState(form || initialFieldForm);
+  const [validationHelpOpen, setValidationHelpOpen] = useState(false);
   const optionEnabled = localForm.dataType === "select" || localForm.dataType === "multi-select";
   const optionSource = localForm.optionSourceType || "Static";
   const validationPlaceholder = localForm.dataType === "stored-procedure"
@@ -310,6 +510,7 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
   }, [form, open]);
 
   return (
+    <>
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>{mode === "edit" ? "Edit field" : "Add field"}</DialogTitle>
       <DialogContent>
@@ -345,6 +546,13 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
             </FormControl>
             <TextField label="Default value" value={localForm.defaultValue} onChange={(event) => setLocalForm((current) => ({ ...current, defaultValue: event.target.value }))} />
           </Box>
+          <TextField
+            label="Placeholder"
+            value={localForm.placeholder}
+            onChange={(event) => setLocalForm((current) => ({ ...current, placeholder: event.target.value }))}
+            helperText="Optional hint text shown inside the field before the user enters a value."
+            fullWidth
+          />
           {(localForm.dataType === "select" || localForm.dataType === "multi-select") ? (
             <FormControl fullWidth>
               <InputLabel>Option source</InputLabel>
@@ -374,22 +582,32 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
               Result set must include <strong>Value</strong> and <strong>Label</strong>. Use <strong>sourceFieldKey</strong> to pass the current value of another field as a parameter; use <strong>value</strong> or <strong>defaultValue</strong> for constants.
             </Alert>
           ) : null}
-          <TextField
-            label="Validation JSON"
-            value={localForm.validationJson}
-            onChange={(event) => setLocalForm((current) => ({ ...current, validationJson: event.target.value }))}
-            onKeyDown={(event) => {
-              if (event.key === "Tab" && !localForm.validationJson?.trim() && validationPlaceholder) {
-                event.preventDefault();
-                setLocalForm((current) => ({ ...current, validationJson: validationPlaceholder }));
-              }
-            }}
-            placeholder={validationPlaceholder}
-            helperText={validationHelperText}
-            minRows={2}
-            multiline
-            fullWidth
-          />
+          <Stack spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Typography variant="subtitle2">Validation JSON</Typography>
+              <Tooltip title="Show validation JSON and table/data source examples">
+                <IconButton size="small" color="primary" onClick={() => setValidationHelpOpen(true)}>
+                  <InfoOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+            <TextField
+              label="Validation JSON"
+              value={localForm.validationJson}
+              onChange={(event) => setLocalForm((current) => ({ ...current, validationJson: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Tab" && !localForm.validationJson?.trim() && validationPlaceholder) {
+                  event.preventDefault();
+                  setLocalForm((current) => ({ ...current, validationJson: validationPlaceholder }));
+                }
+              }}
+              placeholder={validationPlaceholder}
+              helperText={validationHelperText}
+              minRows={2}
+              multiline
+              fullWidth
+            />
+          </Stack>
           <FormControlLabel control={<Checkbox checked={localForm.isRequired} onChange={(event) => setLocalForm((current) => ({ ...current, isRequired: event.target.checked }))} />} label="Required field" />
 
           {optionEnabled && (localForm.optionSourceType || "Static") === "Static" ? (
@@ -422,6 +640,52 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
         <Button variant="contained" startIcon={<SaveRoundedIcon />} onClick={() => onSubmit(localForm)} disabled={submitting}>Save field</Button>
       </DialogActions>
     </Dialog>
+    <Dialog open={validationHelpOpen} onClose={() => setValidationHelpOpen(false)} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ pr: 7 }}>
+        Field configuration guide
+        <IconButton
+          aria-label="Close field configuration guide"
+          onClick={() => setValidationHelpOpen(false)}
+          size="small"
+          sx={{ position: "absolute", right: 12, top: 12 }}
+        >
+          <CloseRoundedIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Alert severity="info" variant="outlined">
+            Press Tab in an empty Validation JSON box to insert the suggested template for the selected data type or option source.
+          </Alert>
+          {validationGuideItems.map((item) => (
+            <Box key={item.title} sx={{ border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1, p: 1.5 }}>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">{item.title}</Typography>
+                {item.body ? <Typography variant="body2" color="text.secondary">{item.body}</Typography> : null}
+                <Box
+                  component="pre"
+                  sx={{
+                    m: 0,
+                    p: 1.25,
+                    borderRadius: 1,
+                    bgcolor: "background.default",
+                    overflowX: "auto",
+                    fontSize: 12,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {item.code}
+                </Box>
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <Button onClick={() => setValidationHelpOpen(false)}>Close</Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 });
 
@@ -445,95 +709,16 @@ export function DecisionDialog({ state, submitting, error, fields, values, onVal
           {state.loading ? <Alert severity="info" variant="outlined">Loading step fields...</Alert> : null}
           {state.action === "Approve" && activeFields.length ? (
             <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
-              {activeFields.map((field) => {
-                const value = values[field.id];
-                const setValue = (nextValue) => onValueChange(field.id, nextValue);
-                const required = isFieldRequiredNow(field, fields, values);
-
-                if (field.dataType === "boolean") {
-                  return (
-                    <FormControlLabel
-                      key={field.id}
-                      control={<Checkbox checked={Boolean(value)} onChange={(event) => setValue(event.target.checked)} />}
-                      label={field.label}
-                    />
-                  );
-                }
-
-                if (field.dataType === "select") {
-                  return (
-                    <WorkflowSelectField key={field.id} field={field} value={value} onChange={setValue} required={required} values={values} fields={fields} />
-                  );
-                }
-
-                if (field.dataType === "multi-select") {
-                  return (
-                    <WorkflowMultiSelectField key={field.id} field={field} value={value} onChange={setValue} required={required} values={values} fields={fields} />
-                  );
-                }
-
-                if (field.dataType === "date") {
-                  return (
-                    <DatePicker
-                      key={field.id}
-                      label={field.label}
-                      value={value ? dayjs(value) : null}
-                      onChange={(nextValue) => setValue(nextValue?.isValid() ? nextValue.format("YYYY-MM-DD") : "")}
-                      slotProps={{ textField: { fullWidth: true, required } }}
-                    />
-                  );
-                }
-
-                if (field.dataType === "datetime") {
-                  return (
-                    <DateTimePicker
-                      key={field.id}
-                      label={field.label}
-                      value={value ? dayjs(value) : null}
-                      onChange={(nextValue) => setValue(nextValue?.isValid() ? nextValue.toISOString() : "")}
-                      slotProps={{ textField: { fullWidth: true, required } }}
-                    />
-                  );
-                }
-
-                if (field.dataType === "file") {
-                  return (
-                    <Box key={field.id} sx={{ gridColumn: "1 / -1", minWidth: 0 }}>
-                      <WorkflowFileField
-                        field={{ ...field, isRequired: required }}
-                        value={value}
-                        onChange={setValue}
-                      />
-                    </Box>
-                  );
-                }
-
-                if (field.dataType === "table") {
-                  return (
-                    <Box key={field.id} sx={{ gridColumn: "1 / -1", minWidth: 0 }}>
-                      <WorkflowTableField
-                        field={{ ...field, isRequired: required }}
-                        value={value}
-                        onChange={setValue}
-                      />
-                    </Box>
-                  );
-                }
-
-                return (
-                  <TextField
-                    key={field.id}
-                    label={field.label}
-                    type={field.dataType === "number" ? "number" : "text"}
-                    value={value ?? ""}
-                    onChange={(event) => setValue(event.target.value)}
-                    required={required}
-                    multiline={field.dataType === "textarea"}
-                    minRows={field.dataType === "textarea" ? 3 : undefined}
-                    fullWidth
+              {activeFields.map((field) => (
+                <Box key={field.id} sx={{ gridColumn: ["file", "table"].includes(field.dataType) ? "1 / -1" : undefined, minWidth: 0 }}>
+                  <WorkflowDynamicField
+                    field={field}
+                    fields={fields}
+                    values={values}
+                    onChange={onValueChange}
                   />
-                );
-              })}
+                </Box>
+              ))}
             </Box>
           ) : null}
           <TextField label="Comment" value={comment} onChange={(event) => setComment(event.target.value)} minRows={3} multiline fullWidth required={state.action === "Reject" || state.action === "Cancel"} />
@@ -586,6 +771,18 @@ function RequestAuditTimeline({ audit = [] }) {
   );
 }
 
+function getRequestStepLabel(step) {
+  const source = step?.step || step || {};
+  return [source.stepCode, source.stepName].filter(Boolean).join(" - ")
+    || source.stepName
+    || step?.stepName
+    || `Step #${step?.stepId || step?.id || "-"}`;
+}
+
+function getStepAssigneeText(step) {
+  return (step?.actionBy || step?.assignedTo || "N/A").split(";").filter(Boolean).join(", ") || "N/A";
+}
+
 export function RequestDetailDialog({ open, detail, workflows, workflowDetail, loading, error, onOpenFile, onClose, getWorkflowName }) {
   const fields = useMemo(() => flattenFields(workflowDetail?.steps || []).filter(isVisibleInputField), [workflowDetail]);
   const valueMap = useMemo(() => {
@@ -604,6 +801,74 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
       dataType: "text",
     }));
   }, [detail, fields]);
+
+  const fieldGroups = useMemo(() => {
+    const workflowSteps = [...(workflowDetail?.steps || [])]
+      .sort((left, right) => (Number(left.stepOrder) - Number(right.stepOrder)) || (Number(left.id) - Number(right.id)));
+    const requestSteps = detail?.steps || [];
+    const requestStepByStepId = new Map(requestSteps.map((step) => [String(step.stepId), step]));
+    const fieldsByStepId = new Map();
+
+    detailFields.forEach((field) => {
+      const stepId = field.stepId ? String(field.stepId) : "";
+      fieldsByStepId.set(stepId, [...(fieldsByStepId.get(stepId) || []), field]);
+    });
+
+    const groups = [];
+    const usedStepIds = new Set();
+
+    workflowSteps.forEach((step) => {
+      const stepId = String(step.id);
+      const stepFields = fieldsByStepId.get(stepId) || [];
+      if (!stepFields.length) {
+        return;
+      }
+
+      usedStepIds.add(stepId);
+      groups.push({
+        key: stepId,
+        step,
+        requestStep: requestStepByStepId.get(stepId),
+        fields: stepFields,
+      });
+    });
+
+    requestSteps.forEach((requestStep) => {
+      const stepId = String(requestStep.stepId || "");
+      if (!stepId || usedStepIds.has(stepId)) {
+        return;
+      }
+
+      const stepFields = fieldsByStepId.get(stepId) || [];
+      if (!stepFields.length) {
+        return;
+      }
+
+      usedStepIds.add(stepId);
+      groups.push({
+        key: stepId,
+        step: requestStep.step || { id: requestStep.stepId, stepName: getRequestStepLabel(requestStep) },
+        requestStep,
+        fields: stepFields,
+      });
+    });
+
+    const ungroupedFields = [
+      ...(fieldsByStepId.get("") || []),
+      ...detailFields.filter((field) => field.stepId && !usedStepIds.has(String(field.stepId))),
+    ];
+
+    if (ungroupedFields.length) {
+      groups.push({
+        key: "ungrouped",
+        step: { stepName: "Other fields" },
+        requestStep: null,
+        fields: ungroupedFields,
+      });
+    }
+
+    return groups;
+  }, [detail?.steps, detailFields, workflowDetail?.steps]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
@@ -652,61 +917,79 @@ export function RequestDetailDialog({ open, detail, workflows, workflowDetail, l
               <Divider />
               <Stack spacing={1.5}>
                 <Typography variant="h6">{detail.instance.title}</Typography>
-                <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" } }}>
-                  {detailFields.map((field) => {
-                    const value = valueMap.get(String(field.id));
-                    const tableRows = (detail?.tableRows || []).filter((row) => String(row.fieldId) === String(field.id));
-                    return (
-                      <Box key={`${field.stepId || "field"}-${field.id}`} sx={{ p: 1.5, minWidth: 0, borderRadius: 1, border: (theme) => `1px solid ${theme.palette.divider}`, gridColumn: field.dataType === "table" ? "1 / -1" : undefined }}>
-                        <Typography variant="caption" color="text.secondary">{field?.label || `Field #${field.id}`}</Typography>
-                        {field.dataType === "file" ? (
-                          value?.files?.length ? (
-                            <Stack spacing={0.75} sx={{ mt: 0.75, minWidth: 0 }}>
-                              {value.files.map((file) => (
-                                <Tooltip key={file.id} title={file.fileName || ""}>
-                                  <Chip
-                                    size="small"
-                                    label={file.fileName}
-                                    variant="outlined"
-                                    onClick={() => onOpenFile(file)}
-                                    sx={{
-                                      width: "100%",
-                                      maxWidth: "100%",
-                                      justifyContent: "flex-start",
-                                      "& .MuiChip-label": {
-                                        display: "block",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                      },
-                                    }}
-                                  />
-                                </Tooltip>
-                              ))}
-                            </Stack>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">&nbsp;</Typography>
-                          )
-                        ) : field.dataType === "table" ? (
-                          <WorkflowTableValueDisplay field={field} value={formatFieldValue(field, value)} tableRows={tableRows} />
-                        ) : (
-                          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{formatFieldValue(field, value) || "\u00a0"}</Typography>
-                        )}
+                <Stack spacing={1.75}>
+                  {fieldGroups.length ? fieldGroups.map((group) => (
+                    <Box key={group.key} sx={{ minWidth: 0 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, overflowWrap: "anywhere" }}>
+                        {getRequestStepLabel(group.step)}
+                      </Typography>
+                      <Box sx={{ display: "grid", columnGap: 2.5, rowGap: 1.25, gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" } }}>
+                        {group.fields.map((field) => {
+                          const value = valueMap.get(String(field.id));
+                          const tableRows = (detail?.tableRows || []).filter((row) => String(row.fieldId) === String(field.id));
+                          return (
+                            <Box
+                              key={`${field.stepId || "field"}-${field.id}`}
+                              sx={{
+                                p: 1.5,
+                                minWidth: 0,
+                                borderRadius: 1,
+                                border: (theme) => `1px solid ${theme.palette.divider}`,
+                                gridColumn: field.dataType === "table" ? "1 / -1" : undefined,
+                              }}
+                            >
+                              <Typography variant="caption" color="text.secondary">{field?.label || `Field #${field.id}`}</Typography>
+                              {field.dataType === "file" ? (
+                                value?.files?.length ? (
+                                  <Stack spacing={0.75} sx={{ mt: 0.5, minWidth: 0 }}>
+                                    {value.files.map((file) => (
+                                      <Tooltip key={file.id} title={file.fileName || ""}>
+                                        <Chip
+                                          size="small"
+                                          label={file.fileName}
+                                          variant="outlined"
+                                          onClick={() => onOpenFile(file)}
+                                          sx={{
+                                            width: "100%",
+                                            maxWidth: "100%",
+                                            justifyContent: "flex-start",
+                                            "& .MuiChip-label": {
+                                              display: "block",
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                            },
+                                          }}
+                                        />
+                                      </Tooltip>
+                                    ))}
+                                  </Stack>
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary">&nbsp;</Typography>
+                                )
+                              ) : field.dataType === "table" ? (
+                                <WorkflowTableValueDisplay field={field} value={formatFieldValue(field, value)} tableRows={tableRows} />
+                              ) : (
+                                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{formatFieldValue(field, value) || "\u00a0"}</Typography>
+                              )}
+                            </Box>
+                          );
+                        })}
                       </Box>
-                    );
-                  })}
-                </Box>
+                    </Box>
+                  )) : <Alert severity="info" variant="outlined">No request fields yet.</Alert>}
+                </Stack>
               </Stack>
               <Divider />
               <Stack spacing={1.25}>
                 <Typography variant="h6">Approval steps</Typography>
                 {detail.steps.length ? detail.steps.map((step) => (
                   <Box key={step.id} sx={{ display: "grid", gap: 1.25, gridTemplateColumns: { xs: "1fr", md: "minmax(180px, 1fr) 120px minmax(0, 2fr)" }, alignItems: "start", p: 1.5, borderRadius: 1, bgcolor: "background.default" }}>
-                    <Typography variant="body2" sx={{ minWidth: 0, overflowWrap: "anywhere" }}>{step.step?.stepName || `Step #${step.stepId}`}</Typography>
+                    <Typography variant="body2" sx={{ minWidth: 0, overflowWrap: "anywhere" }}>{getRequestStepLabel(step)}</Typography>
                     <Chip label={step.status} size="small" color={getStatusColor(step.status)} sx={{ justifySelf: { md: "start" } }} />
                     <Stack spacing={0.5} sx={{ minWidth: 0 }}>
                       <Typography variant="caption" color="text.secondary">{step.actionBy ? "Action by" : "Assigned to"}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>
-                        {(step.actionBy || step.assignedTo || "N/A").split(";").join(", ")}
+                        {getStepAssigneeText(step)}
                       </Typography>
                     </Stack>
                   </Box>

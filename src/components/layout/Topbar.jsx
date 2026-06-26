@@ -43,10 +43,11 @@ import {
 import {
   externalApplicationGroups,
   getApplicationsForUser,
-  openExternalApplication,
 } from "../../app/appRegistry";
+import { launchExternalApplication } from "../../app/applicationLaunch";
 import { getHrAdminFeatures } from "../../features/hrAdmin/hrAdminCatalog";
 import { openNotificationLink } from "../../utils/notificationLinks";
+import { getErrorMessage } from "../../pages/workflow/workflowUtils";
 
 function normalizeSearchText(value) {
   return String(value || "")
@@ -76,62 +77,65 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
   const [searchValue, setSearchValue] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const menuSearchItems = useMemo(
-    () => {
-      const sidebarItems = getSearchableSidebarNavigationForUser(auth.user).map(
-        (item) => {
-          const label = getNavigationLabel(item, t);
-          const parentLabel = item.parentLabelKey
-            ? t(item.parentLabelKey)
-            : item.parentLabel;
+  const menuSearchItems = useMemo(() => {
+    const sidebarItems = getSearchableSidebarNavigationForUser(auth.user).map(
+      (item) => {
+        const label = getNavigationLabel(item, t);
+        const parentLabel = item.parentLabelKey
+          ? t(item.parentLabelKey)
+          : item.parentLabel;
 
-          return {
-            ...item,
-            label,
-            parentLabel,
-            searchText: [label, parentLabel].filter(Boolean).join(" "),
-          };
-        },
-      );
+        return {
+          ...item,
+          label,
+          parentLabel,
+          searchText: [label, parentLabel].filter(Boolean).join(" "),
+        };
+      },
+    );
 
-      const hrAdminLabel = t("nav.hr_admin");
-      const hrAdminFeatureItems = getHrAdminFeatures(t).map((feature) => ({
-        id: `hr-admin-feature-${feature.id}`,
-        label: feature.title,
-        to: feature.routePath || `/dashboard/hr-admin/${feature.id}`,
-        parentId: "hr_admin",
-        parentLabel: hrAdminLabel,
-        searchText: [
-          feature.title,
-          feature.description,
-          feature.category,
-          feature.status,
-          ...(feature.meta || []),
-        ]
-          .filter(Boolean)
-          .join(" "),
-      }));
+    const hrAdminLabel = t("nav.hr_admin");
+    const hrAdminFeatureItems = getHrAdminFeatures(t).map((feature) => ({
+      id: `hr-admin-feature-${feature.id}`,
+      label: feature.title,
+      to: feature.routePath || `/dashboard/hr-admin/${feature.id}`,
+      parentId: "hr_admin",
+      parentLabel: hrAdminLabel,
+      searchText: [
+        feature.title,
+        feature.description,
+        feature.category,
+        feature.status,
+        ...(feature.meta || []),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    }));
 
-      const externalGroupById = Object.fromEntries(
-        externalApplicationGroups.map((group) => [group.id, group]),
-      );
-      const externalApplicationItems = getApplicationsForUser(auth.user)
-        .filter((application) => application.type === "external")
-        .map((application) => {
-          const group = externalGroupById[application.groupId];
+    const externalGroupById = Object.fromEntries(
+      externalApplicationGroups.map((group) => [group.id, group]),
+    );
+    const externalApplicationItems = getApplicationsForUser(auth.user)
+      .filter((application) => application.type === "external")
+      .map((application) => {
+        const group = externalGroupById[application.groupId];
 
-          return {
-            ...application,
-            parentId: group?.id,
-            parentLabel: group?.label,
-            searchText: [application.label, group?.label].filter(Boolean).join(" "),
-          };
-        });
+        return {
+          ...application,
+          parentId: group?.id,
+          parentLabel: group?.label,
+          searchText: [application.label, group?.label]
+            .filter(Boolean)
+            .join(" "),
+        };
+      });
 
-      return [...sidebarItems, ...externalApplicationItems, ...hrAdminFeatureItems];
-    },
-    [auth.user, t],
-  );
+    return [
+      ...sidebarItems,
+      ...externalApplicationItems,
+      ...hrAdminFeatureItems,
+    ];
+  }, [auth.user, t]);
 
   const searchResults = useMemo(() => {
     const normalizedQuery = normalizeSearchText(searchValue.trim());
@@ -160,12 +164,19 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
     navigate("/login", { replace: true });
   };
 
-  const handleSearchItemClick = (item) => {
+  const handleSearchItemClick = async (item) => {
     setSearchValue("");
     setSearchOpen(false);
 
     if (item.type === "external") {
-      openExternalApplication(item.href);
+      try {
+        await launchExternalApplication(item);
+      } catch (error) {
+        notify({
+          message: getErrorMessage(error, "Could not open application."),
+          severity: "error",
+        });
+      }
       return;
     }
 
@@ -267,7 +278,7 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
                       {searchResults.map((item, index) => (
                         <Box key={item.id}>
                           <ListItemButton
-                            onClick={() => handleSearchItemClick(item)}
+                            onClick={() => void handleSearchItemClick(item)}
                             sx={{
                               px: 1.5,
                               py: 1.25,
@@ -292,7 +303,9 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
                               }}
                             />
                           </ListItemButton>
-                          {index !== searchResults.length - 1 ? <Divider /> : null}
+                          {index !== searchResults.length - 1 ? (
+                            <Divider />
+                          ) : null}
                         </Box>
                       ))}
                     </List>
@@ -364,46 +377,73 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
         onClose={() => setNotificationAnchor(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{ sx: { width: 360, mt: 1.5, p: 1 } }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 600,
+              minWidth: 450,
+              maxWidth: 600,
+              boxSizing: "border-box",
+              mt: 1.5,
+              p: 1,
+              overflow: "hidden",
+              overflowX: "hidden",
+            },
+          },
+        }}
       >
-        <Stack spacing={1}>
+        <Stack
+          spacing={1}
+          sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}
+        >
           <Box sx={{ px: 1.5, pt: 1 }}>
             <Stack
               direction="row"
-              spacing={1}
               alignItems="flex-start"
-              justifyContent="space-between"
+              sx={{ width: "100%" }}
             >
-              <Box>
-                <Typography variant="h6">
+              <Box sx={{ minWidth: 0, flex: "1 1 auto" }}>
+                <Typography variant="h6" noWrap>
                   {t("topbar.notificationsTitle")}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" noWrap>
                   {notificationsError || t("topbar.notificationsSubtitle")}
                 </Typography>
               </Box>
-              <Tooltip title={t("actions.retry")}>
-                <span>
-                  <IconButton
-                    size="small"
-                    onClick={() => void reloadNotifications()}
-                    disabled={notificationsLoading}
-                  >
-                    <RefreshRoundedIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Mark all as read">
-                <span>
-                  <IconButton
-                    size="small"
-                    onClick={() => void markAllNotificationsAsRead()}
-                    disabled={!notifications.length || notificationsLoading}
-                  >
-                    <DoneRoundedIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{
+                  flex: "0 0 auto",
+                  ml: "auto",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Tooltip title="Refresh">
+                  <span>
+                    <IconButton
+                      size="small"
+                      aria-label="Refresh notifications"
+                      onClick={() => void reloadNotifications()}
+                      disabled={notificationsLoading}
+                    >
+                      <RefreshRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Mark all as read">
+                  <span>
+                    <IconButton
+                      size="small"
+                      aria-label="Mark all notifications as read"
+                      onClick={() => void markAllNotificationsAsRead()}
+                      disabled={!notifications.length || notificationsLoading}
+                    >
+                      <DoneRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Stack>
             </Stack>
           </Box>
           {notificationsLoading ? (
@@ -416,27 +456,55 @@ export function Topbar({ onMenuClick, onSidebarToggle, onOpenSettings }) {
               ))}
             </Stack>
           ) : notifications.length ? (
-            <List disablePadding>
+            <List
+              disablePadding
+              sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}
+            >
               {notifications.map((item, index) => (
-                <Box key={item.id}>
+                <Box key={item.id} sx={{ minWidth: 0, overflow: "hidden" }}>
                   <ListItemButton
                     onClick={() => void handleNotificationClick(item)}
                     sx={{
+                      width: "100%",
+                      maxWidth: "100%",
                       px: 1.5,
                       py: 1.25,
                       alignItems: "flex-start",
                       cursor: item.link ? "pointer" : "default",
+                      minWidth: 0,
+                      overflow: "hidden",
                     }}
                   >
                     <ListItemText
-                      sx={{ pr: 5 }}
-                      primary={item.title}
+                      sx={{ pr: 2, minWidth: 0, overflow: "hidden" }}
+                      primary={
+                        <Typography
+                          component="span"
+                          variant="subtitle2"
+                          sx={{
+                            display: "block",
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.title}
+                        </Typography>
+                      }
                       secondary={
                         <>
                           <Typography
                             component="span"
                             variant="body2"
                             color="text.secondary"
+                            sx={{
+                              display: "-webkit-box",
+                              overflow: "hidden",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 2,
+                              wordBreak: "break-word",
+                            }}
                           >
                             {item.description || t("common.notAvailable")}
                           </Typography>

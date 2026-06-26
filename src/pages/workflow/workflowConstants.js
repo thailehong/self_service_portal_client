@@ -1,5 +1,6 @@
 export const approvalModes = ["Sequential", "ParallelAll", "ParallelAny"];
-export const approverTypes = ["User", "Users", "WorkflowPermission", "Group", "HOD", "NoApproval"];
+export const parallelRejectPolicies = ["AnyReject", "AllReject"];
+export const approverTypes = ["User", "Users", "WorkflowPermission", "Group", "HOD", "Requester", "NoApproval"];
 export const principalTypes = ["User", "Group"];
 export const permissions = ["Owner", "Approver", "User", "Viewer", "Reporter"];
 export const workflowApproverPermissions = ["Owner", "Approver", "User", "Viewer", "Reporter"];
@@ -17,6 +18,9 @@ export const initialWorkflowForm = {
   code: "",
   name: "",
   description: "",
+  ccn: "",
+  bu: "",
+  department: "",
   isActive: true,
   isPublic: false,
   versionMode: "SnapshotOnCreate",
@@ -35,6 +39,8 @@ export const initialStepForm = {
   isRequired: true,
   minApproveCount: "",
   reminderHours: "",
+  parallelRejectPolicy: "AnyReject",
+  parallelWithStepId: "",
 };
 
 export const initialFieldForm = {
@@ -43,6 +49,7 @@ export const initialFieldForm = {
   dataType: "text",
   isRequired: false,
   defaultValue: "",
+  placeholder: "",
   optionSourceType: "Static",
   validationJson: "",
   displayOrder: 1,

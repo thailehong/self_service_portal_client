@@ -4,11 +4,11 @@ export function getErrorMessage(error, fallback) {
   const responseData = error.response?.data;
 
   if (typeof responseData === "string" && responseData.trim()) {
-    return responseData;
+    return sanitizeErrorMessage(responseData, fallback);
   }
 
   if (Array.isArray(responseData?.errors) && responseData.errors.length > 0) {
-    return responseData.errors[0];
+    return sanitizeErrorMessage(responseData.errors[0], fallback);
   }
 
   if (responseData?.errors && typeof responseData.errors === "object") {
@@ -17,17 +17,55 @@ export function getErrorMessage(error, fallback) {
     );
 
     if (firstGroup) {
-      return firstGroup[0];
+      return sanitizeErrorMessage(firstGroup[0], fallback);
     }
   }
 
-  return (
+  return sanitizeErrorMessage(
     responseData?.detail ||
     responseData?.message ||
     responseData?.title ||
     error.message ||
-    fallback
+    fallback,
+    fallback,
   );
+}
+
+function sanitizeErrorMessage(value, fallback) {
+  if (!value) {
+    return fallback;
+  }
+
+  let message = String(value)
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  message = message
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]")
+    .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[redacted-token]")
+    .replace(/(Authorization\s*[:=]\s*)[^\s,;]+/gi, "$1[redacted]")
+    .replace(/(access[_-]?token\s*[:=]\s*)[^\s,;]+/gi, "$1[redacted]")
+    .replace(/(refresh[_-]?token\s*[:=]\s*)[^\s,;]+/gi, "$1[redacted]");
+
+  const looksLikeDiagnostics =
+    /System\.[A-Za-z0-9_.]+Exception/i.test(message)
+    || /Microsoft\.[A-Za-z0-9_.]+Exception/i.test(message)
+    || /\bAuthorization\b/i.test(message)
+    || /\bBearer\b/i.test(message)
+    || /\bat\s+[\w.]+\(.*\)/i.test(message)
+    || /\bRequest headers\b/i.test(message)
+    || /\bStack Trace\b/i.test(message)
+    || /\bAxiosError\b/i.test(message)
+    || message.length > 500;
+
+  if (looksLikeDiagnostics) {
+    return fallback;
+  }
+
+  return message || fallback;
 }
 
 export function getStatusColor(status) {
@@ -115,18 +153,56 @@ export function getFieldConditionConfig(field) {
     }
 
     return {
-      visibleWhen: readConfigProperty(config, "visibleWhen"),
-      showWhen: readConfigProperty(config, "showWhen"),
-      requiredWhen: readConfigProperty(config, "requiredWhen"),
+      visibleWhen: readValidationConfigProperty(config, "visibleWhen"),
+      showWhen: readValidationConfigProperty(config, "showWhen"),
+      requiredWhen: readValidationConfigProperty(config, "requiredWhen"),
     };
   } catch {
     return {};
   }
 }
 
+function parseConfigValue(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 function readConfigProperty(config, propertyName) {
+  if (!config || typeof config !== "object" || Array.isArray(config)) {
+    return undefined;
+  }
+
   const key = Object.keys(config).find((item) => item.toLowerCase() === propertyName.toLowerCase());
   return key ? config[key] : undefined;
+}
+
+function readValidationConfigProperty(config, propertyName) {
+  const parsedConfig = parseConfigValue(config);
+  const directValue = readConfigProperty(parsedConfig, propertyName);
+  if (directValue !== undefined) {
+    return directValue;
+  }
+
+  for (const key of ["schema", "table", "tableField", "tableSchema", "tableConfig"]) {
+    const nestedConfig = readConfigProperty(parsedConfig, key);
+    if (nestedConfig === undefined) {
+      continue;
+    }
+
+    const nestedValue = readValidationConfigProperty(nestedConfig, propertyName);
+    if (nestedValue !== undefined) {
+      return nestedValue;
+    }
+  }
+
+  return undefined;
 }
 
 function readConditionProperty(condition, propertyName) {
@@ -383,8 +459,13 @@ export function getStoredProcedureConfig(field) {
 }
 
 export function validateStepForm(form) {
-  if (!form.stepName.trim() || !form.approverValue.trim()) {
-    return "Step name and approver value are required.";
+  if (!form.stepName.trim()) {
+    return "Step name is required.";
+  }
+
+  const selfResolvedApproverTypes = ["NoApproval", "HOD", "Requester"];
+  if (!selfResolvedApproverTypes.includes(form.approverType) && !form.approverValue.trim()) {
+    return "Approver value is required.";
   }
 
   if (form.approvalMode === "ParallelAny" && (!form.minApproveCount || Number(form.minApproveCount) <= 0)) {
@@ -393,6 +474,10 @@ export function validateStepForm(form) {
 
   if (form.reminderHours !== "" && (!Number.isFinite(Number(form.reminderHours)) || Number(form.reminderHours) <= 0)) {
     return "Reminder hours must be greater than 0.";
+  }
+
+  if (!["AnyReject", "AllReject"].includes(form.parallelRejectPolicy || "AnyReject")) {
+    return "Parallel reject policy is invalid.";
   }
 
   return "";
