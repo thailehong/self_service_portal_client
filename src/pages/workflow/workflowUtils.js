@@ -416,12 +416,63 @@ export function getFormValueFromStoredValue(field, value) {
   }
 }
 
-export function buildRequestValuesFromDetail(fields, values) {
+function getTableCellFormValue(cell) {
+  if (!cell) {
+    return "";
+  }
+
+  if (cell.valueText !== null && cell.valueText !== undefined && cell.valueText !== "") {
+    return cell.valueText;
+  }
+
+  if (cell.valueNumber !== null && cell.valueNumber !== undefined) {
+    return cell.valueNumber;
+  }
+
+  if (cell.valueDate !== null && cell.valueDate !== undefined && cell.valueDate !== "") {
+    return cell.valueDate;
+  }
+
+  if (cell.valueDateTime !== null && cell.valueDateTime !== undefined && cell.valueDateTime !== "") {
+    return cell.valueDateTime;
+  }
+
+  if (cell.valueBool !== null && cell.valueBool !== undefined) {
+    return cell.valueBool;
+  }
+
+  if (cell.valueJson !== null && cell.valueJson !== undefined && cell.valueJson !== "") {
+    try {
+      return JSON.parse(cell.valueJson);
+    } catch {
+      return cell.valueJson;
+    }
+  }
+
+  return "";
+}
+
+function getTableRowsFormValue(field, tableRows) {
+  return tableRows
+    .filter((row) => String(row.fieldId) === String(field.id))
+    .sort((left, right) => Number(left.rowIndex || 0) - Number(right.rowIndex || 0))
+    .map((row, index) => ({
+      rowIndex: row.rowIndex || index + 1,
+      cells: (row.cells || []).reduce((cells, cell) => ({
+        ...cells,
+        [cell.columnKey]: getTableCellFormValue(cell),
+      }), {}),
+    }));
+}
+
+export function buildRequestValuesFromDetail(fields, values, tableRows = []) {
   const valueMap = new Map(values.map((value) => [String(value.fieldId), value]));
 
   return fields.reduce((nextValues, field) => ({
     ...nextValues,
-    [field.id]: getFormValueFromStoredValue(field, valueMap.get(String(field.id))),
+    [field.id]: field.dataType === "table" && getTableRowsFormValue(field, tableRows).length
+      ? getTableRowsFormValue(field, tableRows)
+      : getFormValueFromStoredValue(field, valueMap.get(String(field.id))),
   }), {});
 }
 

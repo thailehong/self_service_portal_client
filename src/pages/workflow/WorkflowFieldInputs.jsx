@@ -6,7 +6,6 @@ import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import { Alert, Autocomplete, Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useEffect, useState } from "react";
-import { DragDropUpload } from "../../components/upload/DragDropUpload";
 import { workflowApi } from "../../services/api/workflowApi";
 import { getErrorMessage, getStoredProcedureConfig } from "./workflowUtils";
 
@@ -127,6 +126,10 @@ const optionFilter = createFilterOptions({
   stringify: (option) => `${option?.label || ""} ${option?.value || ""}`,
 });
 
+const workflowFileExtensions = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff"];
+const workflowFileAccept = workflowFileExtensions.map((extension) => `.${extension}`).join(",");
+const workflowFileMaxSizeMb = 25;
+
 export function WorkflowFileField({ field, value, onChange, preview = false }) {
   const currentValue = value && typeof value === "object" ? value : { files: [], existingFiles: [] };
   const files = Array.from(currentValue.files || []);
@@ -152,10 +155,39 @@ export function WorkflowFileField({ field, value, onChange, preview = false }) {
     }
   };
 
+  const attachFiles = (fileList) => {
+    const nextFiles = Array.from(fileList || []);
+    if (!nextFiles.length) {
+      return;
+    }
+
+    const invalidFile = nextFiles.find((file) => {
+      const extension = String(file.name || "").split(".").pop()?.toLowerCase() || "";
+      return !workflowFileExtensions.includes(extension);
+    });
+    if (invalidFile) {
+      setDownloadError(`${invalidFile.name} is not an allowed file type.`);
+      return;
+    }
+
+    const oversizedFile = nextFiles.find((file) => file.size > workflowFileMaxSizeMb * 1024 * 1024);
+    if (oversizedFile) {
+      setDownloadError(`${oversizedFile.name} exceeds ${workflowFileMaxSizeMb} MB.`);
+      return;
+    }
+
+    setDownloadError("");
+    onChange({ ...currentValue, files: [...files, ...nextFiles] });
+  };
+
+  const removeFile = (fileIndex) => {
+    onChange({ ...currentValue, files: files.filter((_, index) => index !== fileIndex) });
+  };
+
   return (
     <Stack spacing={1}>
       <Stack spacing={0.25}>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }}>
           <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>{field.label}{field.isRequired ? " *" : ""}</Typography>
           {field.stepTemplate ? (
             <Tooltip title="Download template">
@@ -183,14 +215,45 @@ export function WorkflowFileField({ field, value, onChange, preview = false }) {
           </Stack>
         </Box>
       ) : (
-        <DragDropUpload
-          files={files}
-          onFilesChange={(nextFiles) => onChange({ ...currentValue, files: nextFiles })}
-          multiple
-          allowedExtensions={["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff"]}
-          maxSizeMb={25}
-          compact
-        />
+        <Stack spacing={0.75}>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Button
+              size="small"
+              variant="outlined"
+              component="label"
+              startIcon={<UploadFileRoundedIcon />}
+            >
+              Attach files
+              <Box
+                component="input"
+                type="file"
+                multiple
+                accept={workflowFileAccept}
+                sx={{ display: "none" }}
+                onChange={(event) => {
+                  attachFiles(event.target.files);
+                  event.target.value = "";
+                }}
+              />
+            </Button>
+            <Typography variant="caption" color="text.secondary">
+              PDF, Office, images. Max {workflowFileMaxSizeMb} MB each.
+            </Typography>
+          </Stack>
+          {files.length ? (
+            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              {files.map((file, index) => (
+                <Chip
+                  key={`${file.name || "file"}-${index}`}
+                  size="small"
+                  label={file.name || `File ${index + 1}`}
+                  variant="outlined"
+                  onDelete={() => removeFile(index)}
+                />
+              ))}
+            </Stack>
+          ) : null}
+        </Stack>
       )}
     </Stack>
   );

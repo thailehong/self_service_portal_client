@@ -32,11 +32,13 @@ import Groups2RoundedIcon from "@mui/icons-material/Groups2Rounded";
 import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import TimelapseRoundedIcon from "@mui/icons-material/TimelapseRounded";
 import BugReportRoundedIcon from "@mui/icons-material/BugReportRounded";
+import BuildCircleRoundedIcon from "@mui/icons-material/BuildCircleRounded";
 import { useTranslation } from "react-i18next";
 import { AppDataTable } from "../components/datatable/AppDataTable";
 import { PageHeader } from "../components/layout/PageHeader";
 import { SectionCard } from "../components/layout/SectionCard";
 import { AdminIssuesPanel } from "./admin/AdminIssuesPanel";
+import { AdminMaintenancePanel } from "./admin/AdminMaintenancePanel";
 import { useNotifier } from "../hooks/useNotifier";
 import { administratorTelemetryApi } from "../services/api/administratorTelemetryApi";
 import { masterDataApi } from "../services/api/masterDataApi";
@@ -1019,6 +1021,7 @@ export function AdministratorPage() {
           <Tab value="access" label="Access control" icon={<SecurityRoundedIcon />} iconPosition="start" />
           <Tab value="monitoring" label="Monitoring" icon={<AnalyticsRoundedIcon />} iconPosition="start" />
           <Tab value="issues" label="Issues" icon={<BugReportRoundedIcon />} iconPosition="start" />
+          <Tab value="maintenance" label="Maintenance" icon={<BuildCircleRoundedIcon />} iconPosition="start" />
         </Tabs>
       </Box>
 
@@ -1432,6 +1435,8 @@ export function AdministratorPage() {
         </Stack>
       ) : activeTab === "issues" ? (
         <AdminIssuesPanel />
+      ) : activeTab === "maintenance" ? (
+        <AdminMaintenancePanel />
       ) : (
         <Stack spacing={3}>
           <SectionCard

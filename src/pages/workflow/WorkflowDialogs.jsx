@@ -1,7 +1,9 @@
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import CloseFullscreenRoundedIcon from "@mui/icons-material/CloseFullscreenRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import {
   Alert,
@@ -28,7 +30,7 @@ import {
   Typography,
 } from "@mui/material";
 import dayjs from "dayjs";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   approvalModes,
   approverTypes,
@@ -691,26 +693,106 @@ export const FieldFormDialog = memo(function FieldFormDialog({ open, mode, form,
 
 export function DecisionDialog({ state, submitting, error, fields, values, onValueChange, onClose, onSubmit }) {
   const [comment, setComment] = useState("");
+  const [maximized, setMaximized] = useState(false);
+  const [dialogSize, setDialogSize] = useState({ width: 840, height: null });
+  const paperRef = useRef(null);
   const activeFields = useMemo(() => getActiveInputFields(fields, values), [fields, values]);
+  const getDefaultDialogWidth = () => Math.min(840, Math.max(520, window.innerWidth - 24));
 
   useEffect(() => {
     if (state.open) {
       setComment("");
+      setMaximized(false);
+      setDialogSize({ width: getDefaultDialogWidth(), height: null });
     }
   }, [state.open]);
 
+  const handleResizePointerDown = (event) => {
+    if (maximized) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const rect = paperRef.current?.getBoundingClientRect();
+    const startWidth = rect?.width || dialogSize.width;
+    const startHeight = rect?.height || 520;
+    const maxWidth = Math.max(360, window.innerWidth - 32);
+    const maxHeight = Math.max(360, window.innerHeight - 32);
+
+    const handlePointerMove = (moveEvent) => {
+      setDialogSize({
+        width: Math.min(maxWidth, Math.max(620, startWidth + moveEvent.clientX - startX)),
+        height: Math.min(maxHeight, Math.max(360, startHeight + moveEvent.clientY - startY)),
+      });
+    };
+
+    const handlePointerUp = () => {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "nwse-resize";
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+  };
+
   return (
-    <Dialog open={state.open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{state.action === "Reject" ? "Reject request" : state.action === "Cancel" ? "Cancel request" : "Approve request"}</DialogTitle>
-      <DialogContent>
+    <Dialog
+      open={state.open}
+      onClose={onClose}
+      fullScreen={maximized}
+      maxWidth={false}
+      slotProps={{
+        paper: {
+          ref: paperRef,
+          style: maximized
+            ? { width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%" }
+            : {
+                width: `${dialogSize.width}px`,
+                minWidth: `${Math.min(dialogSize.width, 840)}px`,
+                height: dialogSize.height ? `${dialogSize.height}px` : undefined,
+                maxWidth: "calc(100vw - 24px)",
+                maxHeight: "calc(100vh - 24px)",
+              },
+          sx: {
+          position: "relative",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+          boxSizing: "border-box",
+          ...(maximized ? {} : { width: `${dialogSize.width}px !important` }),
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {state.action === "Reject" ? "Reject request" : state.action === "Cancel" ? "Cancel request" : "Approve request"}
+        </Box>
+        <Tooltip title={maximized ? "Restore dialog" : "Maximize dialog"}>
+          <IconButton size="small" onClick={() => setMaximized((value) => !value)}>
+            {maximized ? <CloseFullscreenRoundedIcon fontSize="small" /> : <OpenInFullRoundedIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      </DialogTitle>
+      <DialogContent dividers sx={{ minHeight: 0, flex: 1 }}>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {error ? <Alert severity="error" variant="outlined">{error}</Alert> : null}
           <Typography variant="body2" color="text.secondary">{state.request?.requestNo || state.request?.title}</Typography>
           {state.loading ? <Alert severity="info" variant="outlined">Loading step fields...</Alert> : null}
           {state.action === "Approve" && activeFields.length ? (
-            <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
+            <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
               {activeFields.map((field) => (
-                <Box key={field.id} sx={{ gridColumn: ["file", "table"].includes(field.dataType) ? "1 / -1" : undefined, minWidth: 0 }}>
+                <Box key={field.id} sx={{ gridColumn: ["file", "table", "textarea"].includes(field.dataType) ? "1 / -1" : undefined, minWidth: 0 }}>
                   <WorkflowDynamicField
                     field={field}
                     fields={fields}
@@ -730,6 +812,23 @@ export function DecisionDialog({ state, submitting, error, fields, values, onVal
           {state.action || "Submit"}
         </Button>
       </DialogActions>
+      {!maximized ? (
+        <Box
+          aria-label="Resize dialog"
+          onPointerDown={handleResizePointerDown}
+          sx={{
+            position: "absolute",
+            right: 6,
+            bottom: 6,
+            zIndex: 3,
+            width: 24,
+            height: 24,
+            cursor: "nwse-resize",
+            touchAction: "none",
+            bgcolor: "transparent",
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

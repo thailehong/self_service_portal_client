@@ -183,9 +183,7 @@ export function AuthLayout({ title, description, children }) {
                   color: "rgba(255,255,255,0.72)",
                 }}
               >
-                {t("auth.scopeEyebrow", {
-                  defaultValue: "Core platform and self-service scope",
-                })}
+                Digital Workplace Portal
               </Typography>
               <Typography
                 variant="h2"
@@ -195,7 +193,7 @@ export function AuthLayout({ title, description, children }) {
                   letterSpacing: 0,
                 }}
               >
-                Employee Self-Service Portal
+                One Portal for Every Business Service
               </Typography>
               <Typography
                 variant="h6"
@@ -205,10 +203,10 @@ export function AuthLayout({ title, description, children }) {
                   lineHeight: 1.55,
                 }}
               >
-                Unified Digital Workplace Portal that enables every employee to
-                access information, perform requests, and interact with company
-                systems in a simple, personalized, and transparent way across
-                web and mobile platforms
+                Unified Digital Workplace that brings together business
+                applications, employee services, workflows, knowledge, and
+                enterprise tools into one seamless experience across web and
+                mobile.
               </Typography>
             </Stack>
 

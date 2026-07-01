@@ -38,7 +38,7 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { ConfirmDialog } from "../components/common/ConfirmDialog";
@@ -94,17 +94,90 @@ import {
 const workflowTabs = ["start", "mine", "pending", "designer", "reports"];
 
 function formatCcnLabel(ccn) {
-  return [ccn?.code, ccn?.name].filter(Boolean).join(" - ") || ccn?.ccn || "";
+  return ccn?.name || ccn?.code || ccn?.ccn || "";
 }
 
 function getCcnFormValue(ccn) {
-  return formatCcnLabel(ccn) || ccn?.ccn || "";
+  return ccn?.name || "";
+}
+
+function sortCcnsByName(ccns = []) {
+  return [...ccns].sort((left, right) =>
+    formatCcnLabel(left).localeCompare(formatCcnLabel(right), undefined, { sensitivity: "base" })
+  );
 }
 
 function matchesCcn(ccn, value) {
-  return [ccn?.ccn, ccn?.code, ccn?.name, formatCcnLabel(ccn)]
+  return [ccn?.ccn, ccn?.code, ccn?.name, [ccn?.code, ccn?.name].filter(Boolean).join(" - "), formatCcnLabel(ccn)]
     .filter(Boolean)
     .some((item) => String(item).toLowerCase() === String(value || "").toLowerCase());
+}
+
+function normalizeWorkflowContextValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function matchesWorkflowContext(left, right) {
+  return Boolean(normalizeWorkflowContextValue(left))
+    && normalizeWorkflowContextValue(left) === normalizeWorkflowContextValue(right);
+}
+
+function matchesWorkflowBu(workflow, ccn, bu) {
+  const workflowBu = workflow?.bu || "";
+  if (!workflowBu || !bu) {
+    return false;
+  }
+
+  if (matchesWorkflowContext(workflowBu, bu)) {
+    return true;
+  }
+
+  return [ccn?.ccn, ccn?.code, ccn?.name, formatCcnLabel(ccn), getCcnFormValue(ccn)]
+    .filter(Boolean)
+    .some((item) => matchesWorkflowContext(workflowBu, item));
+}
+
+function matchesWorkflowDepartment(workflow, department) {
+  return matchesWorkflowContext(workflow?.department, department);
+}
+
+function isStartableWorkflowForContext(workflow, ccn, bu, department) {
+  const isStartable = Boolean(workflow?.isActive)
+    && Boolean(workflow?.access?.canSubmit)
+    && Boolean(workflow?.currentApprovedVersionId);
+
+  if (!isStartable) {
+    return false;
+  }
+
+  if (bu && !matchesWorkflowBu(workflow, ccn, bu)) {
+    return false;
+  }
+
+  if (department && !matchesWorkflowDepartment(workflow, department)) {
+    return false;
+  }
+
+  return true;
+}
+
+function formatWorkflowOptionLabel(workflow) {
+  const parts = [workflow?.code, workflow?.name].filter(Boolean);
+  return parts.length ? parts.join(" - ") : (workflow?.id ? `Workflow #${workflow.id}` : "");
+}
+
+function workflowOptionSearchText(workflow) {
+  return [workflow?.code, workflow?.name, formatWorkflowOptionLabel(workflow)].filter(Boolean).join(" ");
+}
+
+function suggestWorkflowCode(workflows = []) {
+  const maxSequence = workflows.reduce((max, workflow) => {
+    const codeNumber = Number(String(workflow?.code || "").match(/^WF0*(\d+)$/i)?.[1] || 0);
+    const idNumber = Number(workflow?.id) || 0;
+    return Math.max(max, codeNumber, idNumber);
+  }, 0);
+
+  return `WF${String(maxSequence + 1).padStart(4, "0")}`;
 }
 
 function RequestDetailDialog({ open, detail, workflows, workflowDetail, loading, error, onOpenFile, onClose }) {
@@ -360,6 +433,7 @@ export function EWorkflowPage() {
   const queryFileId = searchParams.get("fileId");
   const queryWorkflowId = searchParams.get("workflowId");
   const initialTab = workflowTabs.includes(queryTab) ? queryTab : "start";
+  const editingDraftLoadRef = useRef(false);
 
   const [tab, setTab] = useState(initialTab);
   const [workflows, setWorkflows] = useState([]);
@@ -376,6 +450,13 @@ export function EWorkflowPage() {
   const [startDetail, setStartDetail] = useState(null);
   const [startLoading, setStartLoading] = useState(false);
   const [startError, setStartError] = useState("");
+  const [startCcns, setStartCcns] = useState([]);
+  const [startDepartments, setStartDepartments] = useState([]);
+  const [startCcn, setStartCcn] = useState("");
+  const [startBu, setStartBu] = useState("");
+  const [startDepartment, setStartDepartment] = useState("");
+  const [startMasterLoading, setStartMasterLoading] = useState(false);
+  const [startMasterError, setStartMasterError] = useState("");
   const [requestTitle, setRequestTitle] = useState("");
   const [requestValues, setRequestValues] = useState({});
   const [requestSubmitting, setRequestSubmitting] = useState(false);
@@ -434,7 +515,17 @@ export function EWorkflowPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState("");
 
-  const startWorkflows = workflows.filter((workflow) => workflow.isActive && workflow.access.canSubmit && workflow.currentApprovedVersionId);
+  const selectedStartCcn = useMemo(
+    () => startCcns.find((ccn) => String(ccn.ccn) === String(startCcn)) || null,
+    [startCcns, startCcn],
+  );
+  const startWorkflows = workflows.filter((workflow) =>
+    isStartableWorkflowForContext(workflow, selectedStartCcn, startBu, startDepartment)
+  );
+  const selectedStartWorkflow = workflows.find((workflow) => String(workflow.id) === String(selectedStartWorkflowId)) || null;
+  const startWorkflowOptions = selectedStartWorkflow && !startWorkflows.some((workflow) => String(workflow.id) === String(selectedStartWorkflow.id))
+    ? [selectedStartWorkflow, ...startWorkflows]
+    : startWorkflows;
   const designerWorkflows = workflows.filter((workflow) => workflow.access.canManage || workflow.access.canApproveVersion);
   const reportWorkflows = workflows.filter((workflow) => workflow.access.canReport);
   const canManageDesigner = Boolean(designerDetail?.access?.canManage);
@@ -451,6 +542,73 @@ export function EWorkflowPage() {
     [designerDetail],
   );
 
+  const resetStartRequestState = ({ clearDepartment = false } = {}) => {
+    if (clearDepartment) {
+      setStartDepartment("");
+      setStartDepartments([]);
+    }
+    setSelectedStartWorkflowId("");
+    setStartDetail(null);
+    setRequestTitle("");
+    setEditingRequest(null);
+    setRequestValues({});
+  };
+
+  const loadStartCcns = async () => {
+    setStartMasterLoading(true);
+    setStartMasterError("");
+
+    try {
+      const nextCcns = sortCcnsByName(await masterDataApi.getCcns());
+      setStartCcns(nextCcns);
+
+      if (startCcn && !nextCcns.some((ccn) => String(ccn.ccn) === String(startCcn))) {
+        setStartCcn("");
+        setStartBu("");
+        resetStartRequestState({ clearDepartment: true });
+      }
+
+      return nextCcns;
+    } catch (error) {
+      setStartMasterError(getErrorMessage(error, "Could not load BU master data."));
+      setStartCcns([]);
+      return [];
+    } finally {
+      setStartMasterLoading(false);
+    }
+  };
+
+  const loadStartDepartmentsForCcn = async (ccn, { keepSelection = true } = {}) => {
+    if (!ccn) {
+      setStartDepartments([]);
+      if (!keepSelection) {
+        setStartDepartment("");
+      }
+      return [];
+    }
+
+    setStartMasterLoading(true);
+    setStartMasterError("");
+
+    try {
+      const nextDepartments = await masterDataApi.getDepartmentsByCcn(ccn);
+      setStartDepartments(nextDepartments);
+
+      if (keepSelection && startDepartment && !nextDepartments.some((department) => matchesWorkflowContext(department.kronosDeptName, startDepartment))) {
+        setStartDepartment("");
+        resetStartRequestState();
+      }
+
+      return nextDepartments;
+    } catch (error) {
+      setStartMasterError(getErrorMessage(error, "Could not load department master data."));
+      setStartDepartments([]);
+      return [];
+    } finally {
+      setStartMasterLoading(false);
+    }
+  };
+
   const loadWorkflows = async () => {
     setWorkflowsLoading(true);
     setWorkflowsError("");
@@ -458,7 +616,12 @@ export function EWorkflowPage() {
     try {
       const nextWorkflows = await workflowApi.getWorkflows();
       setWorkflows(nextWorkflows);
-      setSelectedStartWorkflowId((current) => current && nextWorkflows.some((item) => String(item.id) === String(current) && item.isActive && item.access.canSubmit && item.currentApprovedVersionId) ? current : "");
+      setSelectedStartWorkflowId((current) =>
+        current && nextWorkflows.some((item) => String(item.id) === String(current)
+          && isStartableWorkflowForContext(item, selectedStartCcn, startBu, startDepartment))
+          ? current
+          : ""
+      );
       setDesignerWorkflowId((current) => current && nextWorkflows.some((item) => String(item.id) === String(current)) ? current : "");
     } catch (error) {
       setWorkflowsError(getErrorMessage(error, "Could not load workflows."));
@@ -495,7 +658,15 @@ export function EWorkflowPage() {
 
   const loadTabData = async (targetTab = tab) => {
     if (targetTab === "start") {
-      await loadWorkflows();
+      if (editingDraftLoadRef.current) {
+        return;
+      }
+
+      await Promise.all([
+        loadWorkflows(),
+        loadStartCcns(),
+        startCcn ? loadStartDepartmentsForCcn(startCcn) : Promise.resolve([]),
+      ]);
       if (selectedStartWorkflowId) {
         await loadStartWorkflowDetail(selectedStartWorkflowId);
       }
@@ -587,6 +758,41 @@ export function EWorkflowPage() {
     } finally {
       setStartLoading(false);
     }
+  };
+
+  const applyStartWorkflowContext = async (workflow) => {
+    if (!workflow) {
+      return;
+    }
+
+    const nextCcns = startCcns.length ? startCcns : await loadStartCcns();
+    const matchedCcn = nextCcns.find((ccn) => matchesCcn(ccn, workflow.bu));
+    const ccnKey = matchedCcn?.ccn || "";
+
+    setStartCcn(ccnKey);
+    setStartBu(matchedCcn ? getCcnFormValue(matchedCcn) : workflow.bu || "");
+    setStartDepartment(workflow.department || "");
+
+    if (ccnKey) {
+      await loadStartDepartmentsForCcn(ccnKey, { keepSelection: false });
+    } else {
+      setStartDepartments([]);
+    }
+  };
+
+  const handleStartWorkflowChange = async (workflow) => {
+    const workflowId = workflow?.id || "";
+    setSelectedStartWorkflowId(workflowId);
+    setEditingRequest(null);
+    setRequestTitle("");
+
+    if (!workflow) {
+      await loadStartWorkflowDetail("");
+      return;
+    }
+
+    await applyStartWorkflowContext(workflow);
+    await loadStartWorkflowDetail(workflowId);
   };
 
   const loadDesignerDetail = async (workflowId) => {
@@ -682,6 +888,7 @@ export function EWorkflowPage() {
   };
 
   const handleEditDraft = async (request) => {
+    editingDraftLoadRef.current = true;
     setTab("start");
     setEditingRequest(request);
     setSelectedStartWorkflowId(request.workflowId);
@@ -694,12 +901,23 @@ export function EWorkflowPage() {
         workflowApi.getRequestDetail(request.id),
       ]);
       const fields = getFirstOrderFields(workflowDetail.steps).filter(isVisibleInputField);
+      const workflow = workflowDetail.workflow || {};
+      const nextCcns = startCcns.length ? startCcns : await loadStartCcns();
+      const matchedCcn = nextCcns.find((ccn) => matchesCcn(ccn, workflow.bu));
+      const ccnKey = matchedCcn?.ccn || "";
+      setStartCcn(ccnKey);
+      setStartBu(matchedCcn ? getCcnFormValue(matchedCcn) : workflow.bu || "");
+      setStartDepartment(workflow.department || "");
+      if (ccnKey) {
+        await loadStartDepartmentsForCcn(ccnKey, { keepSelection: false });
+      }
       setStartDetail(workflowDetail);
       setRequestTitle(detail.instance.title);
-      setRequestValues(buildRequestValuesFromDetail(fields, detail.values));
+      setRequestValues(buildRequestValuesFromDetail(fields, detail.values, detail.tableRows));
     } catch (error) {
       setStartError(getErrorMessage(error, "Could not load draft for editing."));
     } finally {
+      editingDraftLoadRef.current = false;
       setStartLoading(false);
     }
   };
@@ -791,7 +1009,7 @@ export function EWorkflowPage() {
       const stepConfig = workflowDetail.steps.find((step) => String(step.id) === String(pendingStep?.stepId));
       const fields = flattenFields(stepConfig ? [stepConfig] : []).filter(isVisibleInputField);
       setDecisionFields(fields);
-      setDecisionValues(buildRequestValuesFromDetail(fields, detail.values));
+      setDecisionValues(buildRequestValuesFromDetail(fields, detail.values, detail.tableRows));
     } catch (error) {
       setDecisionError(getErrorMessage(error, "Could not load approval fields."));
     } finally {
@@ -863,7 +1081,7 @@ export function EWorkflowPage() {
     setWorkflowMasterLoading(true);
     setWorkflowMasterError("");
     try {
-      const nextCcns = await masterDataApi.getCcns();
+      const nextCcns = sortCcnsByName(await masterDataApi.getCcns());
       setWorkflowCcns(nextCcns);
       return nextCcns;
     } catch (error) {
@@ -934,7 +1152,10 @@ export function EWorkflowPage() {
       versionMode: item.versionMode || "SnapshotOnCreate",
       mail: item.mail || "",
       mailProfileName: item.mailProfileName || "",
-    } : initialWorkflowForm);
+    } : {
+      ...initialWorkflowForm,
+      code: suggestWorkflowCode(workflows),
+    });
     void prepareWorkflowMasterData(item);
   };
 
@@ -1536,6 +1757,150 @@ export function EWorkflowPage() {
     onReject: (request) => openDecision(request, "Reject"),
   }), [workflows]);
 
+  const renderStartRequestContent = () => (
+    <>
+      {startMasterError ? <Alert severity="error" variant="outlined">{startMasterError}</Alert> : null}
+      {startMasterLoading ? <Alert severity="info" variant="outlined">Loading BU and department data...</Alert> : null}
+      {editingRequest ? (
+        <Alert
+          severity="info"
+          variant="outlined"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => {
+                setEditingRequest(null);
+                setRequestTitle("");
+                if (startDetail) {
+                  setRequestValues(
+                    getFirstOrderFields(startDetail.steps).filter(isVisibleInputField)
+                      .reduce((values, field) => ({ ...values, [field.id]: getFieldInitialValue(field) }), {}),
+                  );
+                }
+              }}
+            >
+              Cancel edit
+            </Button>
+          }
+        >
+          Editing draft {editingRequest.requestNo}.
+        </Alert>
+      ) : null}
+      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "minmax(220px, 1fr) minmax(260px, 1.2fr) minmax(260px, 1.2fr) minmax(260px, 1.4fr)" } }}>
+        <Autocomplete
+          options={startCcns}
+          value={selectedStartCcn}
+          loading={startMasterLoading}
+          getOptionLabel={formatCcnLabel}
+          isOptionEqualToValue={(option, value) => String(option.ccn) === String(value.ccn)}
+          onChange={(_, value) => {
+            const ccnKey = value?.ccn || "";
+            setStartCcn(ccnKey);
+            setStartBu(value ? getCcnFormValue(value) : "");
+            resetStartRequestState({ clearDepartment: true });
+            if (ccnKey) {
+              void loadStartDepartmentsForCcn(ccnKey, { keepSelection: false });
+            }
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="BU" required fullWidth />
+          )}
+        />
+        <Autocomplete
+          options={startDepartments}
+          value={startDepartments.find((department) => matchesWorkflowContext(department.kronosDeptName, startDepartment)) || (startDepartment ? { kronosDeptName: startDepartment } : null)}
+          loading={startMasterLoading}
+          getOptionLabel={(option) => option?.kronosDeptName || ""}
+          isOptionEqualToValue={(option, value) => String(option.kronosDeptId || option.kronosDeptName) === String(value.kronosDeptId || value.kronosDeptName)}
+          disabled={!startCcn}
+          onChange={(_, value) => {
+            setStartDepartment(value?.kronosDeptName || "");
+            resetStartRequestState();
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Department" required fullWidth />
+          )}
+        />
+        <Autocomplete
+          options={startWorkflowOptions}
+          value={selectedStartWorkflow}
+          loading={workflowsLoading}
+          disabled={!startWorkflowOptions.length}
+          getOptionLabel={formatWorkflowOptionLabel}
+          isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
+          filterOptions={(options, state) => {
+            const query = normalizeWorkflowContextValue(state.inputValue);
+            if (!query) {
+              return options;
+            }
+            return options.filter((workflow) => normalizeWorkflowContextValue(workflowOptionSearchText(workflow)).includes(query));
+          }}
+          onChange={(_, workflow) => {
+            void handleStartWorkflowChange(workflow);
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Workflow" fullWidth />
+          )}
+        />
+        <TextField label="Request title" value={requestTitle} onChange={(event) => setRequestTitle(event.target.value)} required fullWidth disabled={!selectedStartWorkflowId} />
+      </Box>
+
+      {!startWorkflowOptions.length ? (
+        <EmptyState
+          title="No workflow available"
+          description={startBu || startDepartment
+            ? "No active workflow with submit permission and approved version matches the selected BU and Department."
+            : "No active workflow with submit permission and approved version is available."}
+        />
+      ) : (
+        <>
+          {startLoading ? <Alert severity="info" variant="outlined">Loading workflow form...</Alert> : null}
+          {startDetail ? (
+            <Stack spacing={2.5}>
+              {startSteps.map((step) => (
+                <Box key={step.id} sx={{ p: 2, borderRadius: 1, border: (theme) => `1px solid ${theme.palette.divider}`, bgcolor: "background.default" }}>
+                  <Stack spacing={2}>
+                    <Stack spacing={0.25}>
+                      <Typography variant="subtitle1">{step.stepName}</Typography>
+                      <Typography variant="caption" color="text.secondary">Order {step.stepOrder} - {step.approvalMode}</Typography>
+                    </Stack>
+                    <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
+                      {step.fields.filter((field) =>
+                        activeStartFieldIds.has(field.id)
+                      ).map((field) => (
+                        <Box key={field.id} sx={{ minWidth: 0, gridColumn: ["file", "table"].includes(field.dataType) ? "1 / -1" : undefined }}>
+                          <WorkflowDynamicField
+                            field={{ ...field, stepId: step.id, stepName: step.stepName, stepOrder: step.stepOrder, stepTemplate: field.template }}
+                            fields={startFields}
+                            values={requestValues}
+                            onChange={(fieldId, nextValue) => setRequestValues((current) => ({ ...current, [fieldId]: nextValue }))}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
+                  </Stack>
+                </Box>
+              ))}
+              {startFields.length ? null : (
+                <Alert severity="info" variant="outlined">
+                  This workflow has no request fields. A draft will be created with the title only.
+                </Alert>
+              )}
+              <Stack direction="row" justifyContent="flex-end">
+                <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={handleCreateRequest} disabled={requestSubmitting || !startDetail}>
+                  {editingRequest ? "Update draft" : "Create draft"}
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <EmptyState title="Choose a workflow" description="The request form will appear after a workflow is selected." />
+          )}
+        </>
+      )}
+    </>
+  );
+
   return (
     <Stack spacing={3.5}>
       <PageHeader
@@ -1568,7 +1933,7 @@ export function EWorkflowPage() {
           action={
             <Stack direction="row" spacing={1} alignItems="center">
               <Chip label={`${startWorkflows.length} available`} color="primary" variant="outlined" />
-              <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={() => void loadTabData("start")} disabled={workflowsLoading || startLoading}>
+              <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={() => void loadTabData("start")} disabled={workflowsLoading || startLoading || startMasterLoading}>
                 Refresh
               </Button>
             </Stack>
@@ -1576,98 +1941,7 @@ export function EWorkflowPage() {
         >
           <Stack spacing={2.5}>
             {startError ? <Alert severity="error" variant="outlined">{startError}</Alert> : null}
-            {startWorkflows.length ? (
-              <>
-                {editingRequest ? (
-                  <Alert
-                    severity="info"
-                    variant="outlined"
-                    action={
-                      <Button
-                        color="inherit"
-                        size="small"
-                        onClick={() => {
-                          setEditingRequest(null);
-                          setRequestTitle("");
-                          if (startDetail) {
-                            setRequestValues(
-                              getFirstOrderFields(startDetail.steps).filter(isVisibleInputField)
-                                .reduce((values, field) => ({ ...values, [field.id]: getFieldInitialValue(field) }), {}),
-                            );
-                          }
-                        }}
-                      >
-                        Cancel edit
-                      </Button>
-                    }
-                  >
-                    Editing draft {editingRequest.requestNo}.
-                  </Alert>
-                ) : null}
-                <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "minmax(260px, 420px) 1fr" } }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Workflow</InputLabel>
-                    <Select
-                      label="Workflow"
-                      value={selectedStartWorkflowId}
-                      onChange={(event) => {
-                        setSelectedStartWorkflowId(event.target.value);
-                        setEditingRequest(null);
-                        setRequestTitle("");
-                        void loadStartWorkflowDetail(event.target.value);
-                      }}
-                    >
-                      {startWorkflows.map((workflow) => <MenuItem key={workflow.id} value={workflow.id}>{workflow.name}</MenuItem>)}
-                    </Select>
-                  </FormControl>
-                  <TextField label="Request title" value={requestTitle} onChange={(event) => setRequestTitle(event.target.value)} required fullWidth />
-                </Box>
-
-                {startLoading ? <Alert severity="info" variant="outlined">Loading workflow form...</Alert> : null}
-                {startDetail ? (
-                  <Stack spacing={2.5}>
-                    {startSteps.map((step) => (
-                      <Box key={step.id} sx={{ p: 2, borderRadius: 1, border: (theme) => `1px solid ${theme.palette.divider}`, bgcolor: "background.default" }}>
-                        <Stack spacing={2}>
-                          <Stack spacing={0.25}>
-                            <Typography variant="subtitle1">{step.stepName}</Typography>
-                            <Typography variant="caption" color="text.secondary">Order {step.stepOrder} · {step.approvalMode}</Typography>
-                          </Stack>
-                          <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
-                            {step.fields.filter((field) =>
-                              activeStartFieldIds.has(field.id)
-                            ).map((field) => (
-                              <Box key={field.id} sx={{ minWidth: 0, gridColumn: ["file", "table"].includes(field.dataType) ? "1 / -1" : undefined }}>
-                                <WorkflowDynamicField
-                                  field={{ ...field, stepId: step.id, stepName: step.stepName, stepOrder: step.stepOrder, stepTemplate: field.template }}
-                                  fields={startFields}
-                                  values={requestValues}
-                                  onChange={(fieldId, nextValue) => setRequestValues((current) => ({ ...current, [fieldId]: nextValue }))}
-                                />
-                              </Box>
-                            ))}
-                          </Box>
-                        </Stack>
-                      </Box>
-                    ))}
-                    {startFields.length ? null : (
-                      <Alert severity="info" variant="outlined">
-                        This workflow has no request fields. A draft will be created with the title only.
-                      </Alert>
-                    )}
-                    <Stack direction="row" justifyContent="flex-end">
-                      <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={handleCreateRequest} disabled={requestSubmitting || !startDetail}>
-                        {editingRequest ? "Update draft" : "Create draft"}
-                      </Button>
-                    </Stack>
-                  </Stack>
-                ) : (
-                  <EmptyState title="Choose a workflow" description="The request form will appear after a workflow is selected." />
-                )}
-              </>
-            ) : (
-              <EmptyState title="No workflow available" description="A workflow must be active, assigned to you, and have an approved version before you can create requests." />
-            )}
+            {renderStartRequestContent()}
           </Stack>
         </SectionCard>
       ) : null}
