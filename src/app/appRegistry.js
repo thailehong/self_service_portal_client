@@ -50,6 +50,15 @@ export const applicationRegistry = [
     quickAccess: true,
   },
   {
+    id: "it_application_request",
+    label: "IT Application Request",
+    type: "internal",
+    to: "/dashboard/self-service/it-application-request",
+    end: true,
+    icon: AppsRoundedIcon,
+    quickAccess: true,
+  },
+  {
     id: "hr_admin",
     label: "HR & Admin",
     type: "internal",

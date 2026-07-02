@@ -15,7 +15,12 @@ import { applicationRegistry } from "../app/appRegistry";
 import { portalFavoritesApi } from "../services/api/portalFavoritesApi";
 import { getErrorMessage } from "./workflow/workflowUtils";
 
-const selfServiceApplicationIds = ["eworkflow", "order_meal", "booking_bus"];
+const selfServiceApplicationIds = [
+  "eworkflow",
+  "it_application_request",
+  "order_meal",
+  "booking_bus",
+];
 const appIconColors = [
   "primary.main",
   "success.main",

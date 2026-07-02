@@ -14,6 +14,7 @@ import { MealOrdersPage } from "../pages/MealOrdersPage";
 import { BookingBusPage } from "../pages/BookingBusPage";
 import { AdministratorPage } from "../pages/AdministratorPage";
 import { EWorkflowPage } from "../pages/EWorkflowPage";
+import { ITApplicationRequestPage } from "../pages/ITApplicationRequestPage";
 import { WorkInboxPage } from "../pages/WorkInboxPage";
 import { HelpCenterPage } from "../pages/HelpCenterPage";
 import { ExternalApplicationsPage } from "../pages/ExternalApplicationsPage";
@@ -59,6 +60,7 @@ export function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="self-service" element={<SelfServicePage />} />
+        <Route path="self-service/it-application-request" element={<ITApplicationRequestPage />} />
         <Route path="work-inbox" element={<WorkInboxPage />} />
         <Route path="eworkflow" element={<EWorkflowPage />} />
         <Route path="hr-admin" element={<HrAdminPage />} />
